@@ -1,4 +1,6 @@
 {
-  "secret": "85a75a91f0ad72b82641517db355e10b0b5a85511c4ab8772a67ba4d13509e58",
-  "extensionTokens": []
+  "secret": "11690f7b8046653507fe5077ec8d7593081a48cac7ad0596b1c66c4052929f6a",
+  "extensionTokens": [
+    "74d521901c0e43b6a3a8b36da10c06a823dfafb549454b27ae2b2fedc786c40d"
+  ]
 }

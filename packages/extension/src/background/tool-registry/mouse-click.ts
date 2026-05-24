@@ -21,13 +21,11 @@ export class MouseClickHandler implements ToolHandler {
     const button = (args.button as string) ?? "left";
     const clickCount = (args.clickCount as number) ?? 1;
 
-    const buttonEnum = button === "right" ? "mouseRight" : button === "middle" ? "mouseMiddle" : "mouseLeft";
-
     await cdpExecutor.sendCommand("Input.dispatchMouseEvent", {
       type: "mousePressed",
       x,
       y,
-      button: buttonEnum,
+      button,
       clickCount,
     });
 
@@ -35,7 +33,7 @@ export class MouseClickHandler implements ToolHandler {
       type: "mouseReleased",
       x,
       y,
-      button: buttonEnum,
+      button,
       clickCount,
     });
 
