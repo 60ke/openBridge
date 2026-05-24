@@ -267,10 +267,10 @@ async function checkToolCount(apiPort: number): Promise<DoctorResult> {
       const count = enabledTools.length;
       return {
         label: "Registered tools",
-        ok: count >= 19,
-        detail: `${count} tools${count < 19 ? " (expected 19+)" : ""}`,
+        ok: count >= 18,
+        detail: `${count} enabled${count < 18 ? " (expected 18+)" : ""} (browser_evaluate requires manual enable)`,
         fix:
-          count < 19
+          count < 18
             ? "Some tools are missing. Rebuild and restart daemon."
             : undefined,
       };

@@ -164,3 +164,7 @@
 [OpenBridge] 2026-05-24T14:40:03.232Z [INFO] Received message type: heartbeat
 [OpenBridge] 2026-05-24T14:40:33.234Z [INFO] Received message type: heartbeat
 [OpenBridge] 2026-05-24T14:41:03.238Z [INFO] Received message type: heartbeat
+[OpenBridge] 2026-05-24T14:41:33.239Z [INFO] Received message type: heartbeat
+[OpenBridge] 2026-05-24T14:42:03.237Z [INFO] Received message type: heartbeat
+[OpenBridge] 2026-05-24T14:42:33.245Z [INFO] Received message type: heartbeat
+[OpenBridge] 2026-05-24T14:42:49.404Z [INFO] Shutting down...
