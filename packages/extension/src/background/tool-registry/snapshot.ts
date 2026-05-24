@@ -41,7 +41,7 @@ export class SnapshotHandler implements ToolHandler {
       const nodes = rawNodes.map((node) => ({
         role: node.role?.value,
         name: node.name?.value,
-        ref: node.backendDOMNodeId,
+        ref: node.backendDOMNodeId ? `backend-${node.backendDOMNodeId}` : undefined,
       }));
       return {
         data: {
@@ -53,8 +53,6 @@ export class SnapshotHandler implements ToolHandler {
     }
 
     const compactNodes: Array<Record<string, unknown>> = [];
-    let refCounter = 0;
-    const backendRefMap = new Map<number, string>();
 
     for (const node of rawNodes) {
       if (compactNodes.length >= maxNodes) break;
@@ -72,13 +70,8 @@ export class SnapshotHandler implements ToolHandler {
 
       if (!isInteractive && !isStructural && !hasName) continue;
 
-      const ref = `ax-${++refCounter}`;
-      if (backendId != null) {
-        backendRefMap.set(backendId, ref);
-      }
-
       const entry: Record<string, unknown> = {
-        ref,
+        ref: backendId != null ? `backend-${backendId}` : undefined,
         role,
       };
 
@@ -105,7 +98,6 @@ export class SnapshotHandler implements ToolHandler {
         url: tab.url,
         title: tab.title,
         nodes: compactNodes,
-        _refMap: Object.fromEntries(backendRefMap),
       },
     };
   }

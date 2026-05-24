@@ -15,7 +15,7 @@ interface NetworkEvent {
 const MAX_BUFFER_SIZE = 500;
 
 const tabBuffers = new Map<number, NetworkEvent[]>();
-const tabListeners = new Map<number, boolean>();
+const tabListeners = new Map<number, (source: ChromeDebuggee, method: string, params: any) => void>();
 
 function getBuffer(tabId: number): NetworkEvent[] {
   if (!tabBuffers.has(tabId)) {
@@ -30,6 +30,15 @@ function pushEvent(tabId: number, event: NetworkEvent): void {
   while (buffer.length > MAX_BUFFER_SIZE) {
     buffer.shift();
   }
+}
+
+function cleanupTab(tabId: number): void {
+  const listener = tabListeners.get(tabId);
+  if (listener) {
+    chrome.debugger.onEvent.removeListener(listener);
+    tabListeners.delete(tabId);
+  }
+  tabBuffers.delete(tabId);
 }
 
 export class NetworkHandler implements ToolHandler {
@@ -51,13 +60,13 @@ export class NetworkHandler implements ToolHandler {
     const action = (args.action as string) ?? "get";
 
     if (action === "start") {
-      if (tabListeners.get(tabId)) {
+      if (tabListeners.has(tabId)) {
         return { data: { status: "already_listening", tabId } };
       }
 
       await cdpExecutor.sendCommand("Network.enable");
 
-      chrome.debugger.onEvent.addListener((source, method, params: any) => {
+      const listener = (source: ChromeDebuggee, method: string, params: any) => {
         if (source.tabId !== tabId) return;
 
         if (method === "Network.requestWillBeSent") {
@@ -85,10 +94,19 @@ export class NetworkHandler implements ToolHandler {
             timestamp: Date.now(),
           });
         }
-      });
+      };
 
-      tabListeners.set(tabId, true);
+      chrome.debugger.onEvent.addListener(listener);
+      tabListeners.set(tabId, listener);
       return { data: { status: "started", tabId } };
+    }
+
+    if (action === "stop") {
+      cleanupTab(tabId);
+      try {
+        await cdpExecutor.sendCommand("Network.disable");
+      } catch {}
+      return { data: { status: "stopped", tabId } };
     }
 
     if (action === "get") {
@@ -106,8 +124,14 @@ export class NetworkHandler implements ToolHandler {
     return {
       error: {
         code: "INVALID_PARAMS",
-        message: `Unknown action: ${action}. Use start, get, or clear.`,
+        message: `Unknown action: ${action}. Use start, stop, get, or clear.`,
       },
     };
   }
 }
+
+chrome.debugger.onDetach.addListener((source) => {
+  if (source.tabId != null) {
+    cleanupTab(source.tabId);
+  }
+});

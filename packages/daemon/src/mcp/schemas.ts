@@ -78,7 +78,7 @@ export const SaveAsPdfShape = {
 };
 
 export const NetworkShape = {
-  action: z.enum(["start", "get", "clear"]).optional(),
+  action: z.enum(["start", "stop", "get", "clear"]).optional(),
   limit: z.number().optional(),
 };
 

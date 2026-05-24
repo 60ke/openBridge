@@ -19,6 +19,10 @@ export class NavigateHandler implements ToolHandler {
     let tabId: number;
 
     if (newTab) {
+      const waitForLoad = waitUntil !== "none"
+        ? this.createLoadListener(waitUntil, timeoutMs)
+        : undefined;
+
       const tab = await chrome.tabs.create({ url, active: true });
       if (tab.id == null) {
         return {
@@ -36,6 +40,15 @@ export class NavigateHandler implements ToolHandler {
           await tabGroupManager.addTabToSession(sessionId, tabId, groupTitle, groupColor);
         } catch {}
       }
+
+      if (waitForLoad) {
+        const loaded = await waitForLoad(tabId);
+        if (!loaded) {
+          return {
+            data: { url, tabId, loaded: false, timeout: true },
+          };
+        }
+      }
     } else {
       if (cdpExecutor.activeTabId == null) {
         return {
@@ -46,20 +59,20 @@ export class NavigateHandler implements ToolHandler {
         };
       }
       tabId = cdpExecutor.activeTabId;
-      await cdpExecutor.sendCommand("Page.navigate", { url });
-    }
 
-    if (waitUntil !== "none") {
-      const loaded = await this.waitForLoad(tabId, waitUntil, timeoutMs);
-      if (!loaded) {
-        return {
-          data: {
-            url,
-            tabId,
-            loaded: false,
-            timeout: true,
-          },
-        };
+      const waitForLoad = waitUntil !== "none"
+        ? this.createLoadListener(waitUntil, timeoutMs)
+        : undefined;
+
+      await cdpExecutor.sendCommand("Page.navigate", { url });
+
+      if (waitForLoad) {
+        const loaded = await waitForLoad(tabId);
+        if (!loaded) {
+          return {
+            data: { url, tabId, loaded: false, timeout: true },
+          };
+        }
       }
     }
 
@@ -75,36 +88,39 @@ export class NavigateHandler implements ToolHandler {
     };
   }
 
-  private waitForLoad(tabId: number, waitUntil: string, timeoutMs: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => {
+  private createLoadListener(waitUntil: string, timeoutMs: number): (tabId: number) => Promise<boolean> {
+    return (tabId: number) => new Promise((resolve) => {
+      let settled = false;
+
+      const finish = (result: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
         chrome.tabs.onUpdated.removeListener(listener);
-        resolve(false);
-      }, timeoutMs);
+        resolve(result);
+      };
+
+      const timeout = setTimeout(() => finish(false), timeoutMs);
 
       const listener = (updatedTabId: number, changeInfo: ChromeTabChangeInfo) => {
         if (updatedTabId !== tabId) return;
 
-        if (waitUntil === "domcontentloaded" && changeInfo.status === "loading") {
-          clearTimeout(timeout);
-          chrome.tabs.onUpdated.removeListener(listener);
-          resolve(true);
+        if (waitUntil === "domcontentloaded" && changeInfo.status === "complete") {
+          finish(true);
         } else if (waitUntil === "load" && changeInfo.status === "complete") {
-          clearTimeout(timeout);
-          chrome.tabs.onUpdated.removeListener(listener);
-          resolve(true);
-        } else if (waitUntil === "networkIdle") {
-          if (changeInfo.status === "complete") {
-            setTimeout(() => {
-              clearTimeout(timeout);
-              chrome.tabs.onUpdated.removeListener(listener);
-              resolve(true);
-            }, 500);
-          }
+          finish(true);
+        } else if (waitUntil === "networkIdle" && changeInfo.status === "complete") {
+          setTimeout(() => finish(true), 500);
         }
       };
 
       chrome.tabs.onUpdated.addListener(listener);
+
+      chrome.tabs.get(tabId).then((tab) => {
+        if (tab.status === "complete" && !settled) {
+          finish(true);
+        }
+      }).catch(() => {});
     });
   }
 }

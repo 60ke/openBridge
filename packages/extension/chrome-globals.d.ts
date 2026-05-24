@@ -22,6 +22,7 @@ interface ChromeTab {
   active?: boolean;
   groupId?: number;
   windowId?: number;
+  status?: string;
 }
 
 interface ChromeTabChangeInfo {
@@ -105,6 +106,7 @@ interface ChromeApi {
     };
     onEvent: {
       addListener(callback: (source: ChromeDebuggee, method: string, params?: any) => void): void;
+      removeListener(callback: (source: ChromeDebuggee, method: string, params?: any) => void): void;
     };
   };
   windows: {

@@ -46,7 +46,7 @@ export async function doctorCommand(options?: {
     const localApiHealthy = await checkLocalApi(apiPort);
     results.push(localApiHealthy);
 
-    const extensionConnected = await checkExtensionConnected(port);
+    const extensionConnected = await checkExtensionConnected(apiPort);
     results.push(extensionConnected);
 
     if (localApiHealthy.ok) {
@@ -246,16 +246,28 @@ async function checkLocalApi(apiPort: number): Promise<DoctorResult> {
   }
 }
 
-async function checkExtensionConnected(port: number): Promise<DoctorResult> {
-  const connected = await checkExtensionWs(port);
-  return {
-    label: "Extension connected",
-    ok: connected,
-    detail: connected ? "Connected" : "Not connected",
-    fix: connected
-      ? undefined
-      : "Open Chrome, enable the OpenBridge extension, and click Pair",
-  };
+async function checkExtensionConnected(apiPort: number): Promise<DoctorResult> {
+  try {
+    const client = new LocalApiClient(apiPort);
+    const result = await client.health();
+    const sessions = result.connectedSessions as string[] | undefined;
+    const connected = Array.isArray(sessions) && sessions.length > 0;
+    return {
+      label: "Extension connected",
+      ok: connected,
+      detail: connected ? `Connected (${sessions!.length} session${sessions!.length !== 1 ? "s" : ""})` : "Not connected",
+      fix: connected
+        ? undefined
+        : "Open Chrome, enable the OpenBridge extension, and click Pair",
+    };
+  } catch {
+    return {
+      label: "Extension connected",
+      ok: false,
+      detail: "Cannot query",
+      fix: "Ensure daemon is running: openbridge serve",
+    };
+  }
 }
 
 async function checkToolCount(apiPort: number): Promise<DoctorResult> {
@@ -363,34 +375,3 @@ function checkDaemonWs(port: number): Promise<boolean> {
   });
 }
 
-function checkExtensionWs(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const ws = new WebSocket(`ws://127.0.0.1:${port}/bridge`);
-    const timeout = setTimeout(() => {
-      ws.close();
-      resolve(false);
-    }, 3000);
-    ws.on("open", () => {
-      const hello = {
-        type: "hello",
-        payload: { version: VERSION, sessionId: "doctor-check-" + Date.now() },
-        timestamp: Date.now(),
-      };
-      ws.send(JSON.stringify(hello));
-    });
-    ws.on("message", (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === "pair_challenge" || msg.type === "hello_ack") {
-          clearTimeout(timeout);
-          ws.close();
-          resolve(true);
-        }
-      } catch {}
-    });
-    ws.on("error", () => {
-      clearTimeout(timeout);
-      resolve(false);
-    });
-  });
-}

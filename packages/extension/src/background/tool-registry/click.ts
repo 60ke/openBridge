@@ -36,13 +36,18 @@ async function clickBySelector(selector: string): Promise<{ x: number; y: number
 async function clickByRef(ref: string): Promise<{ x: number; y: number }> {
   let backendNodeId: number;
 
-  if (ref.startsWith("ax-")) {
+  if (ref.startsWith("backend-")) {
+    backendNodeId = parseInt(ref.slice(8), 10);
+    if (isNaN(backendNodeId)) {
+      throw new Error(`Invalid snapshot ref: ${ref}`);
+    }
+  } else if (ref.startsWith("ax-")) {
+    const idx = parseInt(ref.slice(3), 10) - 1;
     const doc = await cdpExecutor.sendCommand("DOM.getDocument");
     const result = await cdpExecutor.sendCommand("Accessibility.queryAXTree", {
       nodeId: doc.root.nodeId,
     });
     const nodes = result.nodes as Array<{ backendDOMNodeId: number }>;
-    const idx = parseInt(ref.slice(3), 10) - 1;
     if (idx < 0 || idx >= nodes.length || !nodes[idx]?.backendDOMNodeId) {
       throw new Error(`Invalid snapshot ref: ${ref}`);
     }

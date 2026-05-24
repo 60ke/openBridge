@@ -39,8 +39,12 @@ export class PairingManager {
   }
 
   initiatePairing(): string {
+    const existing = this.loadPairing();
     const secret = this.generateSecret();
-    this.savePairing({ secret, extensionTokens: [] });
+    this.savePairing({
+      secret,
+      extensionTokens: existing?.extensionTokens ?? [],
+    });
     return secret;
   }
 

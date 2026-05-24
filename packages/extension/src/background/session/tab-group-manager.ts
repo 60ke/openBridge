@@ -10,10 +10,19 @@ interface SessionGroupInfo {
   title: string;
 }
 
+interface SessionData {
+  sessionGroups: Array<[string, { groupId: number; color: TabGroupColor; title: string }]>;
+  sessionTabs: Array<[string, number[]]>;
+}
+
+const STORAGE_KEY = "openbridge_tab_group_manager";
+
 export class TabGroupManager {
   private sessionGroups = new Map<string, SessionGroupInfo>();
   private sessionTabs = new Map<string, Set<number>>();
   private colorIndex = 0;
+  private dirty = false;
+  private saveTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     if (typeof chrome !== "undefined" && chrome.tabGroups) {
@@ -21,11 +30,69 @@ export class TabGroupManager {
         for (const [sessionId, info] of this.sessionGroups.entries()) {
           if (info.groupId === group.id) {
             this.sessionGroups.delete(sessionId);
+            this.sessionTabs.delete(sessionId);
+            this.scheduleSave();
             break;
           }
         }
       });
     }
+
+    this.loadFromStorage();
+  }
+
+  private async loadFromStorage(): Promise<void> {
+    try {
+      const result = await chrome.storage.session.get(STORAGE_KEY);
+      const data = result[STORAGE_KEY] as SessionData | undefined;
+      if (!data) return;
+
+      if (data.sessionGroups) {
+        for (const [sessionId, info] of data.sessionGroups) {
+          try {
+            await chrome.tabGroups.get(info.groupId);
+            this.sessionGroups.set(sessionId, info);
+          } catch {
+            // group no longer exists, skip
+          }
+        }
+      }
+
+      if (data.sessionTabs) {
+        for (const [sessionId, tabIds] of data.sessionTabs) {
+          if (this.sessionGroups.has(sessionId)) {
+            const validIds = new Set<number>();
+            for (const tabId of tabIds) {
+              try {
+                await chrome.tabs.get(tabId);
+                validIds.add(tabId);
+              } catch {
+                // tab no longer exists, skip
+              }
+            }
+            this.sessionTabs.set(sessionId, validIds);
+          }
+        }
+      }
+    } catch {}
+  }
+
+  private scheduleSave(): void {
+    if (this.saveTimer) clearTimeout(this.saveTimer);
+    this.saveTimer = setTimeout(() => this.saveToStorage(), 500);
+  }
+
+  private async saveToStorage(): Promise<void> {
+    this.saveTimer = null;
+    try {
+      const data: SessionData = {
+        sessionGroups: Array.from(this.sessionGroups.entries()),
+        sessionTabs: Array.from(this.sessionTabs.entries()).map(
+          ([k, v]) => [k, Array.from(v)]
+        ),
+      };
+      await chrome.storage.session.set({ [STORAGE_KEY]: data });
+    } catch {}
   }
 
   private nextColor(): TabGroupColor {
@@ -47,6 +114,7 @@ export class TabGroupManager {
           this.sessionTabs.set(sessionId, new Set());
         }
         this.sessionTabs.get(sessionId)!.add(tabId);
+        this.scheduleSave();
         return;
       } catch {
         this.sessionGroups.delete(sessionId);
@@ -68,6 +136,7 @@ export class TabGroupManager {
       this.sessionTabs.set(sessionId, new Set());
     }
     this.sessionTabs.get(sessionId)!.add(tabId);
+    this.scheduleSave();
   }
 
   getManagedTabIds(sessionId: string): number[] {
@@ -89,11 +158,13 @@ export class TabGroupManager {
 
   removeTabFromSession(sessionId: string, tabId: number): void {
     this.sessionTabs.get(sessionId)?.delete(tabId);
+    this.scheduleSave();
   }
 
   clearSession(sessionId: string): void {
     this.sessionGroups.delete(sessionId);
     this.sessionTabs.delete(sessionId);
+    this.scheduleSave();
   }
 
   getAllSessionIds(): string[] {
