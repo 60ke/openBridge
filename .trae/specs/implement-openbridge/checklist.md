@@ -1,0 +1,47 @@
+- [ ] Monorepo skeleton: `pnpm install && pnpm build` succeeds with no type errors
+- [ ] Shared package types are importable from both daemon and extension
+- [ ] Daemon WebSocket Server listens on `127.0.0.1:10086` and accepts connections
+- [ ] Non-loopback connections are rejected by Daemon
+- [ ] Extension auto-connects to Daemon on startup
+- [ ] Extension auto-reconnects within 5 seconds after Daemon restart
+- [ ] Extension recovers connection after Service Worker suspension via chrome.alarms
+- [ ] Hello/hello_ack handshake completes on connection
+- [ ] Heartbeat keepalive works bidirectionally at 30s interval
+- [ ] Pairing flow: first connection requires user confirmation in Popup
+- [ ] Unpaired connections cannot execute any browser commands
+- [ ] Invalid or expired tokens are rejected with AUTH_FAILED
+- [ ] `openbridge reset-pairing` invalidates old tokens
+- [ ] WebSocket Origin validation rejects non-extension origins
+- [ ] MCP Server exposes all MVP tools with correct schemas via stdio
+- [ ] MCP tool calls are routed to Extension and results returned to MCP client
+- [ ] Tool call timeout works (30s default)
+- [ ] `browser_list_tabs` returns current Chrome tabs
+- [ ] `browser_select_tab` activates tab and attaches debugger
+- [ ] `browser_navigate` navigates to specified URL
+- [ ] `browser_snapshot` returns accessibility tree summary
+- [ ] `browser_click` clicks element by selector or ref
+- [ ] `browser_fill` fills input field with value
+- [ ] `browser_type` simulates keyboard input
+- [ ] `browser_send_keys` sends keyboard shortcuts
+- [ ] `browser_screenshot` returns base64-encoded screenshot
+- [ ] `browser_evaluate` is blocked by default (PERMISSION_DENIED)
+- [ ] `browser_evaluate` works after user enables it in Popup
+- [ ] High-risk tools are disabled by default
+- [ ] Medium and low-risk tools are enabled by default
+- [ ] Tab Lease: acquire, release, renew with 10min TTL
+- [ ] Tab Lease: concurrent session conflict returns TAB_LEASED_BY_OTHER_SESSION
+- [ ] Tab Lease: expired lease auto-releases
+- [ ] Tab closed by user triggers lease cleanup
+- [ ] Request queue: concurrent mutating tool calls execute sequentially
+- [ ] Popup UI shows connection status, Daemon address, pairing state
+- [ ] Popup UI has pairing confirmation dialog
+- [ ] Popup UI has high-risk tool toggle
+- [ ] Popup UI has pause/resume button
+- [ ] `openbridge serve` starts MCP + WebSocket server
+- [ ] `openbridge doctor` checks Node.js, port, extension, pairing, Chrome
+- [ ] `openbridge reset-pairing` clears pairing data
+- [ ] `openbridge status` shows daemon and extension status
+- [ ] Logs do not contain full page text, screenshots, cookies, or Authorization headers
+- [ ] All tool parameters are validated with zod schemas
+- [ ] Pause mode rejects all mutating tools, allows read-only tools
+- [ ] Integration test: full flow from MCP client → Daemon → Extension → Browser works

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "openbridge": {
+      "command": "node",
+      "args": [
+        "/Users/k/Desktop/openBridge/packages/daemon/dist/cli/index.js",
+        "mcp"
+      ]
+    }
+  }
+}

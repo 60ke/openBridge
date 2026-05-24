@@ -1,0 +1,17 @@
+{
+  "name": "@openbridge/extension",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "wxt build",
+    "dev": "wxt",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@openbridge/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "wxt": "^0.19.0"
+  }
+}

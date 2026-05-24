@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyboard Event Testing — OpenBridge</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+header { margin-bottom: 32px; }
+header h1 { margin-bottom: 4px; color: #1a1a2e; }
+header a { color: #4a6cf7; text-decoration: none; font-size: 0.9em; }
+header a:hover { text-decoration: underline; }
+.section { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; }
+.section h2 { margin-bottom: 12px; color: #1a1a2e; font-size: 1.1em; }
+.section label { display: block; font-weight: 600; margin-bottom: 6px; }
+#key-input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1em; font-family: monospace; }
+#key-input:focus { outline: none; border-color: #4a6cf7; box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15); }
+#key-display { margin-top: 12px; padding: 12px 16px; background: #f0f3ff; border-radius: 6px; font-family: monospace; min-height: 40px; }
+#shortcut-zone { padding: 20px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; text-align: center; cursor: pointer; min-height: 80px; display: flex; align-items: center; justify-content: center; transition: border-color 0.2s; }
+#shortcut-zone:focus { outline: none; border-color: #4a6cf7; background: #f0f3ff; }
+#shortcut-response { margin-top: 12px; padding: 12px 16px; background: #fff3cd; border: 1px solid #ffeeba; border-radius: 6px; font-weight: 600; min-height: 20px; }
+#editable-div { padding: 12px 16px; border: 1px solid #ccc; border-radius: 6px; min-height: 80px; font-family: inherit; background: #fff; }
+#editable-div:focus { outline: none; border-color: #4a6cf7; box-shadow: 0 0 0 3px rgba(74, 108, 247, 0.15); }
+#event-log { padding: 12px 16px; background: #1a1a2e; color: #0f0; border-radius: 6px; font-family: monospace; font-size: 0.85em; min-height: 200px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+#event-log .log-entry { margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid #2a2a4e; }
+</style>
+</head>
+<body>
+<header>
+<h1>Keyboard Event Testing</h1>
+<a href="index.html">&larr; Back to Index</a>
+</header>
+<div class="section">
+<h2>Key Press Display</h2>
+<label for="key-input">Type here to see key events:</label>
+<input type="text" id="key-input" data-testid="key-input" placeholder="Press keys to see their details...">
+<div id="key-display" data-testid="key-display">Keys pressed will appear here</div>
+</div>
+<div class="section">
+<h2>Keyboard Shortcuts</h2>
+<p>Click the zone below, then try these shortcuts:</p>
+<ul style="margin: 8px 0 12px 20px; font-size: 0.95em;">
+<li><strong>Ctrl+S</strong> — Save triggered</li>
+<li><strong>Ctrl+Z</strong> — Undo triggered</li>
+<li><strong>Escape</strong> — Escape pressed</li>
+</ul>
+<div id="shortcut-zone" tabindex="0" data-testid="shortcut-zone">Click here and press keyboard shortcuts</div>
+<div id="shortcut-response" data-testid="shortcut-response"></div>
+</div>
+<div class="section">
+<h2>Contenteditable</h2>
+<label for="editable-div">Rich text input area (contenteditable):</label>
+<div id="editable-div" contenteditable="true" data-testid="editable-div">Edit this text freely...</div>
+</div>
+<div class="section">
+<h2>Event Log</h2>
+<p style="margin-bottom: 12px; font-size: 0.9em; color: #666;">All keyboard events (keydown, keyup, keypress) are logged below with details.</p>
+<div id="event-log" data-testid="event-log"></div>
+</div>
+<script>
+var keyInput = document.getElementById('key-input');
+var keyDisplay = document.getElementById('key-display');
+var shortcutZone = document.getElementById('shortcut-zone');
+var shortcutResponse = document.getElementById('shortcut-response');
+var eventLog = document.getElementById('event-log');
+function logEvent(type, e) {
+var entry = document.createElement('div');
+entry.className = 'log-entry';
+entry.textContent = type + ' | key: ' + e.key + ' | code: ' + e.code + ' | ctrlKey: ' + e.ctrlKey + ' | shiftKey: ' + e.shiftKey + ' | altKey: ' + e.altKey + ' | metaKey: ' + e.metaKey;
+eventLog.appendChild(entry);
+eventLog.scrollTop = eventLog.scrollHeight;
+}
+keyInput.addEventListener('keydown', function(e) {
+keyDisplay.textContent = 'key: ' + e.key + ' | code: ' + e.code + ' | ctrlKey: ' + e.ctrlKey + ' | shiftKey: ' + e.shiftKey + ' | altKey: ' + e.altKey + ' | metaKey: ' + e.metaKey;
+logEvent('keydown', e);
+});
+keyInput.addEventListener('keyup', function(e) {
+logEvent('keyup', e);
+});
+keyInput.addEventListener('keypress', function(e) {
+logEvent('keypress', e);
+});
+shortcutZone.addEventListener('keydown', function(e) {
+e.preventDefault();
+if (e.ctrlKey && e.key === 's') {
+shortcutResponse.textContent = 'Save triggered';
+shortcutResponse.style.background = '#d4edda';
+shortcutResponse.style.color = '#155724';
+shortcutResponse.style.borderColor = '#c3e6cb';
+} else if (e.ctrlKey && e.key === 'z') {
+shortcutResponse.textContent = 'Undo triggered';
+shortcutResponse.style.background = '#cce5ff';
+shortcutResponse.style.color = '#004085';
+shortcutResponse.style.borderColor = '#b8daff';
+} else if (e.key === 'Escape') {
+shortcutResponse.textContent = 'Escape pressed';
+shortcutResponse.style.background = '#f8d7da';
+shortcutResponse.style.color = '#721c24';
+shortcutResponse.style.borderColor = '#f5c6cb';
+}
+logEvent('keydown', e);
+});
+shortcutZone.addEventListener('keyup', function(e) {
+logEvent('keyup', e);
+});
+var editableDiv = document.getElementById('editable-div');
+editableDiv.addEventListener('keydown', function(e) {
+logEvent('keydown', e);
+});
+editableDiv.addEventListener('keyup', function(e) {
+logEvent('keyup', e);
+});
+editableDiv.addEventListener('keypress', function(e) {
+logEvent('keypress', e);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Navigation Testing — OpenBridge</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+header { margin-bottom: 32px; }
+header h1 { margin-bottom: 4px; color: #1a1a2e; }
+header a { color: #4a6cf7; text-decoration: none; font-size: 0.9em; }
+header a:hover { text-decoration: underline; }
+nav { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; }
+nav h2 { margin-bottom: 12px; font-size: 1.1em; color: #1a1a2e; }
+nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 12px; }
+nav ul li a { color: #4a6cf7; text-decoration: none; padding: 6px 12px; background: #f0f3ff; border-radius: 4px; font-size: 0.95em; }
+nav ul li a:hover { background: #dde3ff; }
+section { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; min-height: 200px; }
+section h2 { margin-bottom: 12px; color: #1a1a2e; }
+.actions { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; }
+.actions h2 { margin-bottom: 12px; font-size: 1.1em; color: #1a1a2e; }
+.actions button { padding: 10px 20px; margin-right: 12px; margin-bottom: 8px; background: #4a6cf7; color: #fff; border: none; border-radius: 6px; font-size: 0.95em; cursor: pointer; transition: background 0.2s; }
+.actions button:hover { background: #3a5ce5; }
+.new-tab-link { display: inline-block; margin-top: 12px; color: #4a6cf7; text-decoration: none; padding: 8px 16px; background: #f0f3ff; border-radius: 4px; }
+.new-tab-link:hover { background: #dde3ff; }
+#hash-display { margin-top: 12px; padding: 8px 12px; background: #f0f3ff; border-radius: 4px; font-family: monospace; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<header>
+<h1>Navigation Testing</h1>
+<a href="index.html">&larr; Back to Index</a>
+</header>
+<nav>
+<h2>Anchor Navigation</h2>
+<ul>
+<li><a href="#section-alpha">Section Alpha</a></li>
+<li><a href="#section-beta">Section Beta</a></li>
+<li><a href="#section-gamma">Section Gamma</a></li>
+<li><a href="#section-delta">Section Delta</a></li>
+</ul>
+</nav>
+<div class="actions">
+<h2>Navigation Actions</h2>
+<button id="navigate-btn">Go to Form Page</button>
+<button id="hash-btn">Change Hash</button>
+<a href="form.html" target="_blank" class="new-tab-link">Open Form Page in New Tab</a>
+<div id="hash-display">Current hash: <span id="hash-value">(none)</span></div>
+</div>
+<section id="section-alpha">
+<h2>Section Alpha</h2>
+<p>This is the first section for anchor navigation testing. It contains enough content to demonstrate scroll behavior when navigating via anchor links.</p>
+</section>
+<section id="section-beta">
+<h2>Section Beta</h2>
+<p>This is the second section. When you click the "Section Beta" anchor link above, the browser should scroll smoothly to this section.</p>
+</section>
+<section id="section-gamma">
+<h2>Section Gamma</h2>
+<p>This is the third section. Anchor navigation is a fundamental browser feature that extensions may need to intercept or observe.</p>
+</section>
+<section id="section-delta">
+<h2>Section Delta</h2>
+<p>This is the fourth and final section. It sits at the bottom of the page to ensure scroll distance is meaningful when testing anchor navigation.</p>
+</section>
+<script>
+document.getElementById('navigate-btn').addEventListener('click', function() {
+window.location.href = 'form.html';
+});
+document.getElementById('hash-btn').addEventListener('click', function() {
+var hashValue = 'hash-' + Date.now();
+window.location.hash = hashValue;
+});
+window.addEventListener('hashchange', function() {
+document.getElementById('hash-value').textContent = window.location.hash;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic DOM Testing — OpenBridge</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+header { margin-bottom: 32px; }
+header h1 { margin-bottom: 4px; color: #1a1a2e; }
+header a { color: #4a6cf7; text-decoration: none; font-size: 0.9em; }
+header a:hover { text-decoration: underline; }
+.controls { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 10px; }
+.controls button { padding: 10px 20px; background: #4a6cf7; color: #fff; border: none; border-radius: 6px; font-size: 0.95em; cursor: pointer; transition: background 0.2s; }
+.controls button:hover { background: #3a5ce5; }
+#element-container { background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; min-height: 60px; }
+#element-container:empty::before { content: "No elements added yet. Click \"Add Element\" to begin."; color: #999; font-style: italic; }
+#element-container .dynamic-element { padding: 12px 16px; margin-bottom: 8px; background: #f0f3ff; border-radius: 6px; border: 1px solid #dde3ff; font-family: monospace; }
+#toggle-section { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; transition: opacity 0.3s; }
+#toggle-section.hidden { display: none; }
+#content-target { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; }
+#dynamic-form-container { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; }
+#dynamic-form-container:empty::before { content: "No dynamic form yet. Click \"Add Form\" to create one."; color: #999; font-style: italic; }
+</style>
+</head>
+<body>
+<header>
+<h1>Dynamic DOM Testing</h1>
+<a href="index.html">&larr; Back to Index</a>
+</header>
+<div class="controls">
+<button id="add-element-btn" data-action="add-element">Add Element</button>
+<button id="remove-element-btn" data-action="remove-element">Remove Element</button>
+<button id="toggle-visibility-btn" data-action="toggle-visibility">Toggle Visibility</button>
+<button id="change-content-btn" data-action="change-content">Change Content</button>
+<button id="add-form-btn" data-action="add-form">Add Form</button>
+</div>
+<div id="element-container" data-testid="element-container"></div>
+<section id="toggle-section" data-testid="toggle-section">
+<h2>Toggleable Section</h2>
+<p data-testid="toggle-text">This section can be shown or hidden using the Toggle Visibility button.</p>
+</section>
+<div id="content-target" data-testid="content-target">
+<h2>Content Target</h2>
+<p id="changeable-text" data-testid="changeable-text">Original content — click "Change Content" to update this text.</p>
+</div>
+<div id="dynamic-form-container" data-testid="dynamic-form-container"></div>
+<script>
+var elementCounter = 0;
+document.getElementById('add-element-btn').addEventListener('click', function() {
+elementCounter++;
+var div = document.createElement('div');
+div.className = 'dynamic-element';
+div.setAttribute('data-element-id', elementCounter);
+div.setAttribute('data-testid', 'dynamic-element-' + elementCounter);
+div.textContent = 'Element #' + elementCounter + ' — Random: ' + Math.floor(Math.random() * 10000);
+document.getElementById('element-container').appendChild(div);
+});
+document.getElementById('remove-element-btn').addEventListener('click', function() {
+var container = document.getElementById('element-container');
+var last = container.lastElementChild;
+if (last) {
+container.removeChild(last);
+}
+});
+document.getElementById('toggle-visibility-btn').addEventListener('click', function() {
+var section = document.getElementById('toggle-section');
+section.classList.toggle('hidden');
+});
+document.getElementById('change-content-btn').addEventListener('click', function() {
+var text = document.getElementById('changeable-text');
+var now = new Date().toLocaleTimeString();
+text.textContent = 'Content updated at ' + now;
+text.setAttribute('data-updated', 'true');
+});
+document.getElementById('add-form-btn').addEventListener('click', function() {
+var container = document.getElementById('dynamic-form-container');
+container.innerHTML = '';
+var form = document.createElement('form');
+form.setAttribute('data-testid', 'dynamic-form');
+form.setAttribute('id', 'dynamic-form');
+var fields = [
+{ label: 'Dynamic Name', type: 'text', id: 'dyn-name', name: 'dyn-name' },
+{ label: 'Dynamic Email', type: 'email', id: 'dyn-email', name: 'dyn-email' },
+{ label: 'Dynamic Message', type: 'textarea', id: 'dyn-message', name: 'dyn-message' }
+];
+fields.forEach(function(field) {
+var group = document.createElement('div');
+group.style.marginBottom = '16px';
+var label = document.createElement('label');
+label.setAttribute('for', field.id);
+label.textContent = field.label;
+label.style.display = 'block';
+label.style.fontWeight = '600';
+label.style.marginBottom = '6px';
+group.appendChild(label);
+var input;
+if (field.type === 'textarea') {
+input = document.createElement('textarea');
+input.style.minHeight = '80px';
+} else {
+input = document.createElement('input');
+input.type = field.type;
+}
+input.id = field.id;
+input.name = field.name;
+input.setAttribute('data-testid', field.id);
+input.style.width = '100%';
+input.style.padding = '10px 12px';
+input.style.border = '1px solid #ccc';
+input.style.borderRadius = '6px';
+input.style.fontSize = '1em';
+input.style.fontFamily = 'inherit';
+group.appendChild(input);
+form.appendChild(group);
+});
+var submitBtn = document.createElement('button');
+submitBtn.type = 'submit';
+submitBtn.textContent = 'Submit Dynamic Form';
+submitBtn.setAttribute('data-testid', 'dynamic-submit');
+submitBtn.style.padding = '10px 24px';
+submitBtn.style.background = '#4a6cf7';
+submitBtn.style.color = '#fff';
+submitBtn.style.border = 'none';
+submitBtn.style.borderRadius = '6px';
+submitBtn.style.cursor = 'pointer';
+form.appendChild(submitBtn);
+form.addEventListener('submit', function(e) {
+e.preventDefault();
+var msg = document.createElement('div');
+msg.textContent = 'Dynamic form submitted!';
+msg.setAttribute('data-testid', 'dynamic-form-success');
+msg.style.marginTop = '12px';
+msg.style.padding = '12px';
+msg.style.background = '#d4edda';
+msg.style.color = '#155724';
+msg.style.borderRadius = '6px';
+form.appendChild(msg);
+});
+container.appendChild(form);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+export { BridgeWebSocketServer } from "./bridge/websocket-server.js";
+export * from "./bridge/protocol.js";
+export { PairingManager } from "./bridge/pairing.js";
+export { AuthManager } from "./bridge/auth.js";
+export { logger } from "./diagnostics/logger.js";
+export { OpenBridgeMcpServer } from "./mcp/server.js";
+export { PermissionManager } from "./policy/permissions.js";
+export { SessionManager } from "./session/session-manager.js";
+export type { Session } from "./session/session-manager.js";
+export { TabLeaseManager } from "./session/tab-lease.js";
+export type { TabLease } from "./session/tab-lease.js";
+export { RequestQueue } from "./session/request-queue.js";
+export { BridgeController } from "./service/bridge-controller.js";
+export { LocalApiServer } from "./service/local-api-server.js";
+export { LocalApiClient } from "./service/local-api-client.js";

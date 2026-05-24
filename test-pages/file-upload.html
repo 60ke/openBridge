@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>File Upload Testing — OpenBridge</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f8f9fa; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; line-height: 1.6; }
+header { margin-bottom: 32px; }
+header h1 { margin-bottom: 4px; color: #1a1a2e; }
+header a { color: #4a6cf7; text-decoration: none; font-size: 0.9em; }
+header a:hover { text-decoration: underline; }
+.section { background: #fff; padding: 24px; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 24px; }
+.section h2 { margin-bottom: 12px; color: #1a1a2e; font-size: 1.1em; }
+.section label { display: block; font-weight: 600; margin-bottom: 6px; }
+.file-input-wrapper { margin-bottom: 12px; }
+.file-input-wrapper input[type="file"] { font-size: 0.95em; }
+#drop-zone { padding: 40px 20px; border: 2px dashed #ccc; border-radius: 8px; text-align: center; color: #666; transition: border-color 0.2s, background 0.2s; cursor: pointer; }
+#drop-zone.dragover { border-color: #4a6cf7; background: #f0f3ff; color: #4a6cf7; }
+#file-info { margin-top: 16px; }
+#file-info .file-entry { padding: 10px 14px; margin-bottom: 6px; background: #f0f3ff; border-radius: 6px; font-family: monospace; font-size: 0.9em; display: flex; justify-content: space-between; }
+#file-info .file-entry .file-name { font-weight: 600; color: #1a1a2e; }
+#file-info .file-entry .file-size { color: #666; }
+button#submit-btn { padding: 12px 32px; background: #4a6cf7; color: #fff; border: none; border-radius: 6px; font-size: 1em; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 16px; }
+button#submit-btn:hover { background: #3a5ce5; }
+#submit-result { margin-top: 16px; padding: 16px; background: #d4edda; color: #155724; border: 1px solid #c3e6cb; border-radius: 6px; display: none; }
+</style>
+</head>
+<body>
+<header>
+<h1>File Upload Testing</h1>
+<a href="index.html">&larr; Back to Index</a>
+</header>
+<div class="section">
+<h2>Single File Upload</h2>
+<label for="single-file">Choose a single file:</label>
+<div class="file-input-wrapper">
+<input type="file" id="single-file" data-testid="single-file">
+</div>
+<div id="single-file-info" data-testid="single-file-info"></div>
+</div>
+<div class="section">
+<h2>Multiple File Upload</h2>
+<label for="multiple-files">Choose multiple files:</label>
+<div class="file-input-wrapper">
+<input type="file" id="multiple-files" multiple data-testid="multiple-files">
+</div>
+<div id="multiple-files-info" data-testid="multiple-files-info"></div>
+</div>
+<div class="section">
+<h2>Drag and Drop</h2>
+<div id="drop-zone" data-testid="drop-zone">Drag and drop files here, or click to select</div>
+<div id="drop-files-info" data-testid="drop-files-info"></div>
+</div>
+<div class="section">
+<h2>Submit Selected Files</h2>
+<button id="submit-btn" data-testid="submit-btn">Submit Files</button>
+<div id="submit-result" data-testid="submit-result"></div>
+</div>
+<script>
+function formatSize(bytes) {
+if (bytes === 0) return '0 B';
+var sizes = ['B', 'KB', 'MB', 'GB'];
+var i = Math.floor(Math.log(bytes) / Math.log(1024));
+return (bytes / Math.pow(1024, i)).toFixed(2) + ' ' + sizes[i];
+}
+function displayFiles(files, containerId) {
+var container = document.getElementById(containerId);
+container.innerHTML = '';
+Array.from(files).forEach(function(file) {
+var entry = document.createElement('div');
+entry.className = 'file-entry';
+entry.setAttribute('data-testid', 'file-entry');
+entry.innerHTML = '<span class="file-name">' + file.name + '</span><span class="file-size">' + formatSize(file.size) + '</span>';
+container.appendChild(entry);
+});
+}
+document.getElementById('single-file').addEventListener('change', function(e) {
+displayFiles(e.target.files, 'single-file-info');
+});
+document.getElementById('multiple-files').addEventListener('change', function(e) {
+displayFiles(e.target.files, 'multiple-files-info');
+});
+var dropZone = document.getElementById('drop-zone');
+var droppedFiles = [];
+dropZone.addEventListener('dragover', function(e) {
+e.preventDefault();
+dropZone.classList.add('dragover');
+});
+dropZone.addEventListener('dragleave', function(e) {
+e.preventDefault();
+dropZone.classList.remove('dragover');
+});
+dropZone.addEventListener('drop', function(e) {
+e.preventDefault();
+dropZone.classList.remove('dragover');
+droppedFiles = Array.from(e.dataTransfer.files);
+displayFiles(droppedFiles, 'drop-files-info');
+});
+dropZone.addEventListener('click', function() {
+var input = document.createElement('input');
+input.type = 'file';
+input.multiple = true;
+input.addEventListener('change', function(e) {
+droppedFiles = Array.from(e.target.files);
+displayFiles(droppedFiles, 'drop-files-info');
+});
+input.click();
+});
+document.getElementById('submit-btn').addEventListener('click', function() {
+var singleFiles = document.getElementById('single-file').files;
+var multiFiles = document.getElementById('multiple-files').files;
+var allFiles = Array.from(singleFiles).concat(Array.from(multiFiles)).concat(droppedFiles);
+var result = document.getElementById('submit-result');
+if (allFiles.length === 0) {
+result.textContent = 'No files selected.';
+result.style.background = '#f8d7da';
+result.style.color = '#721c24';
+result.style.borderColor = '#f5c6cb';
+} else {
+result.textContent = 'Submitted ' + allFiles.length + ' file(s): ' + allFiles.map(function(f) { return f.name + ' (' + formatSize(f.size) + ')'; }).join(', ');
+result.style.background = '#d4edda';
+result.style.color = '#155724';
+result.style.borderColor = '#c3e6cb';
+}
+result.style.display = 'block';
+});
+</script>
+</body>
+</html>
