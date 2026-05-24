@@ -34,42 +34,35 @@ export class TabGroupManager {
     return color;
   }
 
-  async ensureGroup(sessionId: string, groupTitle?: string, groupColor?: string): Promise<number> {
+  async addTabToSession(sessionId: string, tabId: number, groupTitle?: string, groupColor?: string): Promise<void> {
+    const color = (groupColor as TabGroupColor) ?? this.nextColor();
+    const title = groupTitle ?? `agent:${sessionId.slice(0, 8)}`;
+
     const existing = this.sessionGroups.get(sessionId);
     if (existing) {
       try {
         await chrome.tabGroups.get(existing.groupId);
-        return existing.groupId;
+        await chrome.tabs.group({ groupId: existing.groupId, tabIds: [tabId] });
+        if (!this.sessionTabs.has(sessionId)) {
+          this.sessionTabs.set(sessionId, new Set());
+        }
+        this.sessionTabs.get(sessionId)!.add(tabId);
+        return;
       } catch {
         this.sessionGroups.delete(sessionId);
       }
     }
 
-    const color = (groupColor as TabGroupColor) ?? this.nextColor();
-    const title = groupTitle ?? `agent:${sessionId}`;
-
     const groupId = await chrome.tabs.group({
-      tabIds: [],
+      tabIds: [tabId],
       createProperties: { windowId: chrome.windows.WINDOW_ID_CURRENT },
     });
 
     try {
       await chrome.tabGroups.update(groupId, { title, color });
-    } catch {
-      // group with no tabs may be auto-removed, that's ok
-    }
+    } catch {}
 
     this.sessionGroups.set(sessionId, { groupId, color, title });
-    return groupId;
-  }
-
-  async addTabToSession(sessionId: string, tabId: number, groupTitle?: string, groupColor?: string): Promise<void> {
-    const groupId = await this.ensureGroup(sessionId, groupTitle, groupColor);
-    try {
-      await chrome.tabs.group({ groupId, tabIds: [tabId] });
-    } catch {
-      this.sessionGroups.delete(sessionId);
-    }
 
     if (!this.sessionTabs.has(sessionId)) {
       this.sessionTabs.set(sessionId, new Set());
