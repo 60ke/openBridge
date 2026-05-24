@@ -9,6 +9,7 @@ const READ_ONLY_TOOLS = new Set([
   "browser_list_tabs",
   "browser_snapshot",
   "browser_screenshot",
+  "browser_find_tab",
 ]);
 
 export interface ToolExecutionResult {

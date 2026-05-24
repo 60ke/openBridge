@@ -1,5 +1,6 @@
 import type { ToolHandler } from "../command-router";
 import { cdpExecutor } from "../cdp-executor";
+import { tabGroupManager } from "../session/tab-group-manager";
 
 export class NewTabHandler implements ToolHandler {
   name = "browser_new_tab";
@@ -8,6 +9,10 @@ export class NewTabHandler implements ToolHandler {
     args: Record<string, any>
   ): Promise<{ data?: any; error?: { code: string; message: string } }> {
     const url = typeof args.url === "string" ? args.url : "about:blank";
+    const sessionId = typeof args.sessionId === "string" ? args.sessionId : undefined;
+    const groupTitle = typeof args.groupTitle === "string" ? args.groupTitle : undefined;
+    const groupColor = typeof args.groupColor === "string" ? args.groupColor : undefined;
+
     const tab = await chrome.tabs.create({ url, active: true });
     if (tab.id == null) {
       return {
@@ -20,11 +25,22 @@ export class NewTabHandler implements ToolHandler {
 
     await cdpExecutor.attach(tab.id);
 
+    if (sessionId) {
+      try {
+        await tabGroupManager.addTabToSession(sessionId, tab.id, groupTitle, groupColor);
+      } catch {
+        // tab group is best-effort, don't fail the whole operation
+      }
+    }
+
+    const groupInfo = sessionId ? tabGroupManager.getGroupInfo(sessionId) : undefined;
+
     return {
       data: {
         tabId: tab.id,
         url: tab.url ?? url,
         title: tab.title ?? "",
+        ...(groupInfo ? { groupId: groupInfo.groupId, groupTitle: groupInfo.title, groupColor: groupInfo.color } : {}),
       },
     };
   }

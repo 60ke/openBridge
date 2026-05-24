@@ -10,6 +10,14 @@ import { TypeHandler } from "./type";
 import { SendKeysHandler } from "./send-keys";
 import { ScreenshotHandler } from "./screenshot";
 import { EvaluateHandler } from "./evaluate";
+import { CloseTabHandler } from "./close-tab";
+import { CloseSessionHandler } from "./close-session";
+import { FindTabHandler } from "./find-tab";
+import { MouseClickHandler } from "./mouse-click";
+import { KeyTypeHandler } from "./key-type";
+import { UploadHandler } from "./upload";
+import { SaveAsPdfHandler } from "./save-as-pdf";
+import { NetworkHandler } from "./network";
 
 export const toolHandlers: ToolHandler[] = [
   new ListTabsHandler(),
@@ -23,4 +31,12 @@ export const toolHandlers: ToolHandler[] = [
   new SendKeysHandler(),
   new ScreenshotHandler(),
   new EvaluateHandler(),
+  new CloseTabHandler(),
+  new CloseSessionHandler(),
+  new FindTabHandler(),
+  new MouseClickHandler(),
+  new KeyTypeHandler(),
+  new UploadHandler(),
+  new SaveAsPdfHandler(),
+  new NetworkHandler(),
 ];

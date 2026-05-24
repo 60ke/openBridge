@@ -3,6 +3,7 @@ const connectionStatus = document.getElementById("connectionStatus")!;
 const pairingInfo = document.getElementById("pairingInfo")!;
 const evaluateToggle = document.getElementById("evaluateToggle") as HTMLInputElement;
 const pauseToggle = document.getElementById("pauseToggle") as HTMLInputElement;
+const cursorToggle = document.getElementById("cursorToggle") as HTMLInputElement;
 const activityList = document.getElementById("activityList")!;
 const footer = document.getElementById("footer")!;
 
@@ -72,10 +73,22 @@ pauseToggle.addEventListener("change", () => {
   send({ type: "togglePause", paused: pauseToggle.checked });
 });
 
+cursorToggle.addEventListener("change", () => {
+  chrome.storage.local.set({ cursor_enabled: cursorToggle.checked });
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs[0]?.id) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: cursorToggle.checked ? "enableCursor" : "disableCursor",
+      }).catch(() => {});
+    }
+  });
+});
+
 async function loadToggles(): Promise<void> {
-  const result = await chrome.storage.local.get(["evaluate_enabled", "paused"]);
+  const result = await chrome.storage.local.get(["evaluate_enabled", "paused", "cursor_enabled"]);
   evaluateToggle.checked = !!result.evaluate_enabled;
   pauseToggle.checked = !!result.paused;
+  cursorToggle.checked = !!result.cursor_enabled;
 }
 
 async function loadRecentActivity(): Promise<void> {
