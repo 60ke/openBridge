@@ -73,15 +73,14 @@ pauseToggle.addEventListener("change", () => {
   send({ type: "togglePause", paused: pauseToggle.checked });
 });
 
-cursorToggle.addEventListener("change", () => {
+cursorToggle.addEventListener("change", async () => {
   chrome.storage.local.set({ cursor_enabled: cursorToggle.checked });
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    if (tabs[0]?.id) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: cursorToggle.checked ? "enableCursor" : "disableCursor",
-      }).catch(() => {});
-    }
-  });
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tabs[0]?.id) {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      type: cursorToggle.checked ? "enableCursor" : "disableCursor",
+    }).catch(() => {});
+  }
 });
 
 async function loadToggles(): Promise<void> {

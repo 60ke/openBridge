@@ -1,10 +1,12 @@
-const COLOR_POOL: chrome.tabGroups.ColorEnum[] = [
+type TabGroupColor = "grey" | "blue" | "red" | "yellow" | "green" | "cyan" | "orange" | "pink" | "purple";
+
+const COLOR_POOL: TabGroupColor[] = [
   "blue", "red", "yellow", "green", "cyan", "orange", "pink", "purple", "grey",
 ];
 
 interface SessionGroupInfo {
   groupId: number;
-  color: chrome.tabGroups.ColorEnum;
+  color: TabGroupColor;
   title: string;
 }
 
@@ -26,7 +28,7 @@ export class TabGroupManager {
     }
   }
 
-  private nextColor(): chrome.tabGroups.ColorEnum {
+  private nextColor(): TabGroupColor {
     const color = COLOR_POOL[this.colorIndex % COLOR_POOL.length];
     this.colorIndex++;
     return color;
@@ -43,7 +45,7 @@ export class TabGroupManager {
       }
     }
 
-    const color = (groupColor as chrome.tabGroups.ColorEnum) ?? this.nextColor();
+    const color = (groupColor as TabGroupColor) ?? this.nextColor();
     const title = groupTitle ?? `agent:${sessionId}`;
 
     const groupId = await chrome.tabs.group({

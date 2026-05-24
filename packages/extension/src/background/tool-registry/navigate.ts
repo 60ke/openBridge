@@ -82,7 +82,7 @@ export class NavigateHandler implements ToolHandler {
         resolve(false);
       }, timeoutMs);
 
-      const listener = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      const listener = (updatedTabId: number, changeInfo: ChromeTabChangeInfo) => {
         if (updatedTabId !== tabId) return;
 
         if (waitUntil === "domcontentloaded" && changeInfo.status === "loading") {

@@ -41,7 +41,12 @@ async function main(): Promise<void> {
       if (portIndex !== -1 && args[portIndex + 1]) {
         port = parseInt(args[portIndex + 1], 10);
       }
-      await doctorCommand({ port });
+      let apiPort: number | undefined;
+      const apiPortIndex = args.indexOf("--api-port");
+      if (apiPortIndex !== -1 && args[apiPortIndex + 1]) {
+        apiPort = parseInt(args[apiPortIndex + 1], 10);
+      }
+      await doctorCommand({ port, apiPort });
       break;
     }
     case "pair":
