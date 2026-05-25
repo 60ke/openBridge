@@ -89,9 +89,9 @@ export interface ToolSchemaEntry {
 }
 
 export const TOOL_SCHEMAS: ToolSchemaEntry[] = [
-  { name: "browser_list_tabs", description: "List all open browser tabs with group information", shape: ListTabsShape },
-  { name: "browser_new_tab", description: "Open a new browser tab, optionally in a session group", shape: NewTabShape },
-  { name: "browser_select_tab", description: "Switch to a specific browser tab by ID, optionally assign to session group", shape: SelectTabShape },
+  { name: "browser_list_tabs", description: "List all open browser tabs with group information. Use this to see which tabs belong to which session", shape: ListTabsShape },
+  { name: "browser_new_tab", description: "Open a new browser tab. Always provide sessionId and a descriptive groupTitle so the tab is organized under a labeled group that can be bulk-cleaned later. Use close_session to close all tabs for a session when done", shape: NewTabShape },
+  { name: "browser_select_tab", description: "Switch to a specific browser tab by ID. If this tab belongs to a new task, pass sessionId and groupTitle to assign it to a session group", shape: SelectTabShape },
   { name: "browser_navigate", description: "Navigate to a URL, optionally in a new tab with page load waiting", shape: NavigateShape },
   { name: "browser_snapshot", description: "Capture an accessibility snapshot of the current page", shape: SnapshotShape },
   { name: "browser_click", description: "Click an element on the page by CSS selector or snapshot ref", shape: ClickShape },
@@ -101,7 +101,7 @@ export const TOOL_SCHEMAS: ToolSchemaEntry[] = [
   { name: "browser_screenshot", description: "Take a screenshot of the current page", shape: ScreenshotShape },
   { name: "browser_evaluate", description: "Evaluate a JavaScript expression in the page context", shape: EvaluateShape },
   { name: "browser_close_tab", description: "Close a specific browser tab by ID", shape: CloseTabShape },
-  { name: "browser_close_session", description: "Close all tabs managed by a session and clean up the session group", shape: CloseSessionShape },
+  { name: "browser_close_session", description: "Close all tabs managed by a session and clean up the session group. Only tabs belonging to this session are closed — other tabs and the browser window remain open", shape: CloseSessionShape },
   { name: "browser_find_tab", description: "Find browser tabs by URL, title, or session", shape: FindTabShape },
   { name: "browser_mouse_click", description: "Click at viewport coordinates using CDP mouse events", shape: MouseClickShape },
   { name: "browser_key_type", description: "Type text using CDP insertText for more reliable input", shape: KeyTypeShape },
