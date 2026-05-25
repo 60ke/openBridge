@@ -4,3 +4,30 @@ dist
 *.crx
 .DS_Store
 .openbridge-data/
+
+# IDE / editor
+.trae/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.tsbuildinfo
+*.tgz

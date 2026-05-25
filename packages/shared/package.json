@@ -1,6 +1,7 @@
 {
   "name": "@openbridge/shared",
   "version": "0.1.0",
+  "description": "Shared types and utilities for OpenBridge monorepo",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -10,6 +11,16 @@
       "import": "./dist/index.js"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/60ke/openBridge.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "browser-bridge",
+    "openbridge",
+    "shared-types"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit"

@@ -42,6 +42,10 @@ The daemon is long-running, while `openbridge mcp` is a lightweight stdio shim t
 
 ## Install
 
+> **Security note:** The quick install script below is convenient, but you should
+> review it before running. You can also follow the manual steps to clone and
+> inspect the code.
+
 Quick network install:
 
 ```bash
@@ -55,10 +59,15 @@ curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh |
   OPENBRIDGE_INSTALL_DIR="$HOME/.openbridge/repo" bash
 ```
 
-If you already cloned the repo, you can still run the installer locally:
+Manual installation (review code before running):
 
 ```bash
-./install.sh
+git clone https://github.com/60ke/openBridge.git
+cd openBridge
+pnpm install
+pnpm build
+# Start the daemon
+node packages/daemon/dist/cli/index.js serve
 ```
 
 The installer will:

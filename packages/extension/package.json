@@ -1,7 +1,20 @@
 {
   "name": "@openbridge/extension",
   "version": "0.1.0",
+  "description": "OpenBridge Chrome extension - bridges browser to local daemon",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/60ke/openBridge.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "browser-bridge",
+    "chrome-extension",
+    "ai-agent",
+    "webbridge",
+    "cdp"
+  ],
   "scripts": {
     "build": "wxt build",
     "dev": "wxt",

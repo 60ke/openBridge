@@ -1,12 +1,25 @@
 {
   "name": "@openbridge/daemon",
   "version": "0.1.0",
+  "description": "Local browser bridge daemon for AI agents - MCP and HTTP API",
   "type": "module",
   "bin": {
     "openbridge": "./dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/60ke/openBridge.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "browser-bridge",
+    "mcp",
+    "chrome-extension",
+    "ai-agent",
+    "webbridge"
+  ],
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",

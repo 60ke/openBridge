@@ -42,6 +42,9 @@ daemon 是长期运行的本地服务，`openbridge mcp` 是一个轻量的 stdi
 
 ## 安装
 
+> **安全提示：** 下方的快速安装脚本很方便，但建议先审查脚本内容再执行。
+> 你也可以使用手动安装步骤，先 clone 仓库审查代码。
+
 推荐直接走网络安装：
 
 ```bash
@@ -55,10 +58,15 @@ curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh |
   OPENBRIDGE_INSTALL_DIR="$HOME/.openbridge/repo" bash
 ```
 
-如果你已经 clone 了仓库，也可以直接本地执行：
+手动安装（先审查代码再执行）：
 
 ```bash
-./install.sh
+git clone https://github.com/60ke/openBridge.git
+cd openBridge
+pnpm install
+pnpm build
+# 启动 daemon
+node packages/daemon/dist/cli/index.js serve
 ```
 
 安装脚本会：
