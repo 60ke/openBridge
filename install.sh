@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DATA_DIR="$ROOT_DIR/.openbridge-data"
-LOG_FILE="$DATA_DIR/daemon.log"
-PID_FILE="$DATA_DIR/daemon.pid"
-WS_PORT="${OPENBRIDGE_WS_PORT:-10087}"
-API_PORT="${OPENBRIDGE_API_PORT:-10088}"
-INSTALL_SKILL=1
-START_DAEMON=1
-TMUX_SESSION="${OPENBRIDGE_TMUX_SESSION:-openbridge-daemon}"
+SCRIPT_SOURCE="${BASH_SOURCE[0]:-$0}"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")" && pwd)"
+LOCAL_INSTALLER="$SCRIPT_DIR/scripts/install-local.sh"
+
+OPENBRIDGE_REPO="${OPENBRIDGE_REPO:-60ke/openBridge}"
+OPENBRIDGE_REF="${OPENBRIDGE_REF:-master}"
+OPENBRIDGE_INSTALL_ROOT="${OPENBRIDGE_INSTALL_ROOT:-$HOME/.openbridge}"
+OPENBRIDGE_INSTALL_DIR="${OPENBRIDGE_INSTALL_DIR:-$OPENBRIDGE_INSTALL_ROOT/repo}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,22 +21,11 @@ ok()    { echo -e "${GREEN}  ✓${NC} $*"; }
 warn()  { echo -e "${YELLOW}  ⚠${NC} $*"; }
 fail()  { echo -e "${RED}  ✗${NC} $*"; }
 
-wait_for_local_api() {
-  local port="$1"
-  local attempts="${2:-20}"
-  local i
-  for ((i = 1; i <= attempts; i++)); do
-    if curl -fsS "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
-      return 0
-    fi
-    sleep 0.5
-  done
-  return 1
-}
-
 usage() {
   cat <<EOF
-Usage: ./install.sh [options]
+Usage:
+  ./install.sh [options]
+  curl -fsSL https://raw.githubusercontent.com/${OPENBRIDGE_REPO}/${OPENBRIDGE_REF}/install.sh | bash
 
 Options:
   --no-skill   Build and start OpenBridge, but skip skill installation
@@ -45,208 +33,62 @@ Options:
   -h, --help   Show this help
 
 Environment:
-  OPENBRIDGE_WS_PORT   WebSocket port, default 10087
-  OPENBRIDGE_API_PORT  Local API port, default 10088
-  OPENBRIDGE_TMUX_SESSION  tmux session name, default openbridge-daemon
+  OPENBRIDGE_REPO          GitHub repo, default ${OPENBRIDGE_REPO}
+  OPENBRIDGE_REF           Git ref to install, default ${OPENBRIDGE_REF}
+  OPENBRIDGE_INSTALL_ROOT  Base install dir, default ${OPENBRIDGE_INSTALL_ROOT}
+  OPENBRIDGE_INSTALL_DIR   Repo checkout dir, default ${OPENBRIDGE_INSTALL_DIR}
 EOF
 }
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --no-skill)
-      INSTALL_SKILL=0
-      shift
-      ;;
-    --no-start)
-      START_DAEMON=0
-      shift
-      ;;
+for arg in "$@"; do
+  case "$arg" in
     -h|--help)
       usage
       exit 0
       ;;
-    *)
-      fail "Unknown option: $1"
-      usage
-      exit 1
-      ;;
   esac
 done
 
-install_skill_to_dir() {
-  local target_root="$1"
-  local skill_dir="$target_root/skills/openbridge-webbridge"
-  local template="$ROOT_DIR/skills/openbridge-webbridge/SKILL.md.template"
+if [[ -f "$LOCAL_INSTALLER" && -d "$SCRIPT_DIR/packages" && -d "$SCRIPT_DIR/skills" ]]; then
+  exec bash "$LOCAL_INSTALLER" "$@"
+fi
 
-  if [[ ! -f "$template" ]]; then
-    warn "Skill template not found: $template"
-    return 1
-  fi
-
-  mkdir -p "$skill_dir"
-  sed \
-    -e "s|{{ROOT_DIR}}|$ROOT_DIR|g" \
-    -e "s|{{API_PORT}}|$API_PORT|g" \
-    "$template" > "$skill_dir/SKILL.md"
-  ok "Installed OpenBridge skill: $skill_dir/SKILL.md"
-}
-
-install_skills() {
-  info "Installing OpenBridge skill..."
-
-  local installed=0
-
-  if [[ -n "${CODEX_HOME:-}" ]]; then
-    install_skill_to_dir "$CODEX_HOME" && installed=1
-  fi
-
-  install_skill_to_dir "$HOME/.codex" && installed=1
-
-  if [[ -d "$HOME/.agents" ]]; then
-    install_skill_to_dir "$HOME/.agents" && installed=1
-  fi
-
-  if [[ "$installed" -eq 0 ]]; then
-    warn "No supported skill runtime found. You can copy the template from:"
-    echo "  $ROOT_DIR/skills/openbridge-webbridge/SKILL.md.template"
-  fi
-}
-
-mkdir -p "$DATA_DIR"
-
-info "Checking prerequisites..."
-
-if ! command -v node &>/dev/null; then
-  fail "Node.js is not installed"
-  echo "  Install from https://nodejs.org (v18+ required)"
+if ! command -v curl >/dev/null 2>&1; then
+  fail "curl is required for network installation"
   exit 1
 fi
 
-NODE_MAJOR=$(node -e "console.log(process.version.slice(1).split('.')[0])")
-if [[ "$NODE_MAJOR" -lt 18 ]]; then
-  fail "Node.js $NODE_MAJOR is too old (need 18+)"
+if ! command -v tar >/dev/null 2>&1; then
+  fail "tar is required for network installation"
   exit 1
 fi
-ok "Node.js $(node --version)"
 
-if ! command -v pnpm &>/dev/null; then
-  warn "pnpm not found, installing..."
-  npm install -g pnpm
-  if ! command -v pnpm &>/dev/null; then
-    fail "Failed to install pnpm"
-    exit 1
-  fi
-fi
-ok "pnpm $(pnpm --version)"
+ARCHIVE_URL="https://github.com/${OPENBRIDGE_REPO}/archive/refs/heads/${OPENBRIDGE_REF}.tar.gz"
+TMP_DIR="$(mktemp -d)"
+ARCHIVE_PATH="$TMP_DIR/openbridge.tar.gz"
+EXTRACT_DIR="$TMP_DIR/extract"
+mkdir -p "$EXTRACT_DIR"
 
-info "Installing dependencies..."
-cd "$ROOT_DIR"
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-
-info "Building OpenBridge..."
-pnpm build
-
-ok "Build complete"
-
-if [[ "$INSTALL_SKILL" -eq 1 ]]; then
-  install_skills
-fi
-
-if [[ "$START_DAEMON" -eq 1 ]]; then
-  if command -v tmux &>/dev/null && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
-    info "Stopping existing tmux daemon session ($TMUX_SESSION)..."
-    tmux kill-session -t "$TMUX_SESSION" || true
-  fi
-
-  if [[ -f "$PID_FILE" ]]; then
-    OLD_PID="$(cat "$PID_FILE" || true)"
-    if [[ -n "${OLD_PID}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
-      info "Stopping existing OpenBridge daemon (PID $OLD_PID)..."
-      kill "$OLD_PID" || true
-      sleep 1
-    fi
-    rm -f "$PID_FILE"
-  fi
-
-  info "Starting OpenBridge daemon on WS port $WS_PORT, API port $API_PORT..."
-  if command -v tmux &>/dev/null; then
-    tmux new-session -d -s "$TMUX_SESSION" \
-      "cd '$ROOT_DIR' && OPENBRIDGE_NO_MCP=1 node '$ROOT_DIR/packages/daemon/dist/cli/index.js' serve --port '$WS_PORT' --api-port '$API_PORT' >>'$LOG_FILE' 2>&1"
-    sleep 0.5
-    DAEMON_PID="$(tmux list-panes -t "$TMUX_SESSION" -F '#{pane_pid}' 2>/dev/null | head -n 1 || true)"
-    echo "$DAEMON_PID" > "$PID_FILE"
-  else
-    OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
-      --port "$WS_PORT" \
-      --api-port "$API_PORT" \
-      </dev/null >"$LOG_FILE" 2>&1 &
-    DAEMON_PID=$!
-    echo "$DAEMON_PID" > "$PID_FILE"
-  fi
-
-  if ! wait_for_local_api "$API_PORT" 20; then
-    sleep 1
-  fi
-
-  if ! curl -fsS "http://127.0.0.1:$API_PORT/health" >/dev/null 2>&1; then
-    fail "Daemon failed to start. Check log: $LOG_FILE"
-    cat "$LOG_FILE"
-    exit 1
-  fi
-  ok "Daemon started (PID $DAEMON_PID)"
-
-  info "Running health check..."
-  if wait_for_local_api "$API_PORT" 10; then
-    ok "Local API is responding"
-  else
-    warn "Local API not responding yet (may need a moment)"
-  fi
-else
-  DAEMON_PID=""
-  warn "Skipped daemon startup (--no-start)"
-fi
-
-echo ""
-if [[ -n "${DAEMON_PID:-}" ]]; then
-  echo -e "${GREEN}OpenBridge is running!${NC}"
-else
-  echo -e "${GREEN}OpenBridge is installed!${NC}"
-fi
-echo ""
-if [[ -n "${DAEMON_PID:-}" ]]; then
-  echo "  Daemon PID:    $DAEMON_PID"
-fi
-echo "  WebSocket:     ws://127.0.0.1:$WS_PORT/bridge"
-echo "  Local API:     http://127.0.0.1:$API_PORT"
-echo "  Log file:      $LOG_FILE"
-echo ""
-echo "Next steps:"
-echo "  1. Load the extension in Chrome from: $ROOT_DIR/packages/extension/.output/chrome-mv3"
-echo "     (chrome://extensions -> Developer mode -> Load unpacked)"
-echo "  2. The extension should authorize automatically once loaded."
-echo "  3. In Codex, use the installed openbridge-webbridge skill."
-echo ""
-echo "Optional MCP config:"
-echo ""
-cat <<EOF
-{
-  "mcpServers": {
-    "openbridge": {
-      "command": "node",
-      "args": [
-        "$ROOT_DIR/packages/daemon/dist/cli/index.js",
-        "mcp",
-        "--api-port",
-        "$API_PORT"
-      ]
-    }
-  }
+cleanup() {
+  rm -rf "$TMP_DIR"
 }
-EOF
-echo ""
-if [[ -n "${DAEMON_PID:-}" ]]; then
-  echo "To stop: kill $DAEMON_PID  (or: kill \$(cat $PID_FILE))"
-else
-  echo "To start: node $ROOT_DIR/packages/daemon/dist/cli/index.js serve --port $WS_PORT --api-port $API_PORT"
+trap cleanup EXIT
+
+info "Downloading OpenBridge from ${ARCHIVE_URL}..."
+curl -fsSL "$ARCHIVE_URL" -o "$ARCHIVE_PATH"
+
+info "Extracting archive..."
+tar -xzf "$ARCHIVE_PATH" -C "$EXTRACT_DIR"
+
+SOURCE_DIR="$(find "$EXTRACT_DIR" -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+if [[ -z "$SOURCE_DIR" || ! -f "$SOURCE_DIR/scripts/install-local.sh" ]]; then
+  fail "Downloaded archive does not contain a valid OpenBridge installer"
+  exit 1
 fi
-echo "To diagnose: node $ROOT_DIR/packages/daemon/dist/cli/index.js doctor"
+
+mkdir -p "$(dirname "$OPENBRIDGE_INSTALL_DIR")"
+rm -rf "$OPENBRIDGE_INSTALL_DIR"
+mv "$SOURCE_DIR" "$OPENBRIDGE_INSTALL_DIR"
+ok "OpenBridge downloaded to $OPENBRIDGE_INSTALL_DIR"
+
+exec bash "$OPENBRIDGE_INSTALL_DIR/scripts/install-local.sh" "$@"

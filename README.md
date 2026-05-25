@@ -42,6 +42,21 @@ The daemon is long-running, while `openbridge mcp` is a lightweight stdio shim t
 
 ## Install
 
+Quick network install:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh | bash
+```
+
+Install into a custom directory:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh | \
+  OPENBRIDGE_INSTALL_DIR="$HOME/.openbridge/repo" bash
+```
+
+If you already cloned the repo, you can still run the installer locally:
+
 ```bash
 ./install.sh
 ```
@@ -69,6 +84,12 @@ Installer options:
 ```bash
 ./install.sh --no-skill
 ./install.sh --no-start
+```
+
+The network installer accepts the same options:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh | bash -s -- --no-start
 ```
 
 ## Useful Commands
@@ -128,7 +149,7 @@ OpenBridge can be used in two ways:
 
 ### Codex
 
-Codex is the primary default flow. After `./install.sh`, OpenBridge installs the `openbridge-webbridge` skill into the local Codex skills directory. Once the daemon is running and the extension is connected, Codex can use the skill to call `http://127.0.0.1:10088/command` directly.
+Codex is the primary default flow. After `install.sh`, OpenBridge installs the `openbridge-webbridge` skill into the local Codex skills directory. Once the daemon is running and the extension is connected, Codex can use the skill to call `http://127.0.0.1:10088/command` directly. The same path also fits Codex-style agent workflows that prefer local skills over MCP registration.
 
 ### Claude Code
 
@@ -144,10 +165,6 @@ If OpenCode supports local MCP server configuration, use the `openbridge mcp` en
 ### Kimi
 
 Kimi itself already ships its own WebBridge stack. OpenBridge is not meant to replace Kimi's built-in browser bridge inside the Kimi product. The intended comparison is architectural: OpenBridge follows a similar `daemon + extension + local API` model, but as an open project.
-
-### CodeX
-
-CodeX-style workflows map naturally to OpenBridge's skill path. Install the project with `./install.sh`, keep the daemon running, and let the client use the installed `openbridge-webbridge` skill. MCP remains available if you want to wire OpenBridge into a more standard server registry.
 
 ### CloudCode / Other MCP Clients
 
