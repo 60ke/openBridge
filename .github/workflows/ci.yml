@@ -42,10 +42,15 @@ jobs:
         run: |
           find packages/extension/.output -maxdepth 1 -name "*-chrome.zip" -print
 
+      - name: Prepare Extension Artifact
+        run: |
+          mkdir -p artifacts
+          cp packages/extension/.output/*-chrome.zip artifacts/openbridge-extension-chrome.zip
+
       - name: Upload Extension Artifact
         uses: actions/upload-artifact@v4
         with:
           name: openbridge-extension-chrome
-          path: packages/extension/.output/*-chrome.zip
+          path: artifacts/openbridge-extension-chrome.zip
           if-no-files-found: error
           retention-days: 30
