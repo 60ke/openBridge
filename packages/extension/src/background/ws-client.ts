@@ -29,12 +29,13 @@ export class BridgeWsClient {
   private urlCandidates: string[];
   private candidateIndex = 0;
   storedToken: string | null = null;
+  private tokenReady: Promise<void>;
 
   constructor(options: BridgeWsClientOptions = {}) {
     this.url = options.url ?? "ws://127.0.0.1:10087/bridge";
     this.currentUrl = this.url;
     this.urlCandidates = this.buildUrlCandidates(this.url);
-    void this.loadToken();
+    this.tokenReady = this.loadToken();
   }
 
   private buildUrlCandidates(primaryUrl: string): string[] {
@@ -118,19 +119,7 @@ export class BridgeWsClient {
       this.state = "connected";
       this.isAuthorized = false;
       this.candidateIndex = 0;
-      const manifest = chrome.runtime.getManifest();
-      const helloPayload: HelloPayload & { token?: string } = {
-        version: manifest.version,
-        sessionId: crypto.randomUUID(),
-      };
-      if (this.storedToken) {
-        helloPayload.token = this.storedToken;
-      }
-      this.send({
-        type: "hello",
-        payload: helloPayload,
-        timestamp: Date.now(),
-      });
+      void this.sendHello();
       this.startHeartbeat();
       if (this.reconnectTimer !== null) {
         clearTimeout(this.reconnectTimer);
@@ -172,6 +161,25 @@ export class BridgeWsClient {
         console.error(`[OpenBridge] WebSocket error on ${this.currentUrl}: ${detail}`);
       }
     };
+  }
+
+  private async sendHello(): Promise<void> {
+    await this.tokenReady;
+    if (this.state !== "connected" || !this.socket) return;
+
+    const manifest = chrome.runtime.getManifest();
+    const helloPayload: HelloPayload & { token?: string } = {
+      version: manifest.version,
+      sessionId: crypto.randomUUID(),
+    };
+    if (this.storedToken) {
+      helloPayload.token = this.storedToken;
+    }
+    this.send({
+      type: "hello",
+      payload: helloPayload,
+      timestamp: Date.now(),
+    });
   }
 
   disconnect(): void {

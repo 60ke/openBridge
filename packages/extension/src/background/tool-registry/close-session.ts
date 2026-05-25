@@ -11,7 +11,7 @@ export class CloseSessionHandler implements ToolHandler {
     const sessionId = args.sessionId as string;
     const closeTabs = args.closeTabs !== false;
 
-    const managedTabIds = tabGroupManager.getManagedTabIds(sessionId);
+    const managedTabIds = await tabGroupManager.getManagedTabIds(sessionId);
 
     if (closeTabs && managedTabIds.length > 0) {
       for (const tabId of managedTabIds) {
@@ -27,7 +27,7 @@ export class CloseSessionHandler implements ToolHandler {
       } catch {}
     }
 
-    tabGroupManager.clearSession(sessionId);
+    await tabGroupManager.clearSession(sessionId);
 
     return {
       data: {

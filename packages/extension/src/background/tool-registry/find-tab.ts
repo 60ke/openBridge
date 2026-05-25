@@ -29,7 +29,7 @@ export class FindTabHandler implements ToolHandler {
       );
     }
     if (sessionId) {
-      const managedIds = new Set(tabGroupManager.getManagedTabIds(sessionId));
+      const managedIds = new Set(await tabGroupManager.getManagedTabIds(sessionId));
       tabs = tabs.filter((t) => managedIds.has(t.id!));
     }
 

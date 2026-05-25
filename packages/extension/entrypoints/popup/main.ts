@@ -21,6 +21,8 @@ async function updateStatus(): Promise<void> {
     const connected = response.connected === true;
     const transportConnected = response.transportConnected === true;
     const paired = response.paired === true;
+    const hasStoredToken = response.hasStoredToken === true;
+    const autoPairing = response.autoPairing === true;
     const url = response.url as string | undefined;
 
     if (transportConnected) {
@@ -36,14 +38,19 @@ async function updateStatus(): Promise<void> {
     }
 
     if (paired) {
-      pairingInfo.innerHTML = `<span class="paired-text">Paired ✓</span><button class="btn btn-danger" id="resetPairBtn">Reset Pairing</button>`;
+      pairingInfo.innerHTML = `<span class="paired-text">Authorized ✓</span><button class="btn btn-danger" id="resetPairBtn">Reset</button>`;
       document.getElementById("resetPairBtn")!.addEventListener("click", handleResetPairing);
     } else if (transportConnected) {
-      pairingInfo.innerHTML = `<span class="not-paired-text">Connected, pairing required</span><button class="btn btn-primary" id="pairBtn">Pair</button>`;
-      document.getElementById("pairBtn")!.addEventListener("click", handlePair);
+      const label = autoPairing
+        ? "Authorizing..."
+        : hasStoredToken
+          ? "Reconnecting..."
+          : "Authorizing...";
+      pairingInfo.innerHTML = `<span class="pending-text">${label}</span><button class="btn btn-secondary" id="reconnectBtn">Retry</button>`;
+      document.getElementById("reconnectBtn")!.addEventListener("click", handleReconnect);
     } else {
-      pairingInfo.innerHTML = `<span class="not-paired-text">Pairing Required</span><button class="btn btn-primary" id="pairBtn">Pair</button>`;
-      document.getElementById("pairBtn")!.addEventListener("click", handlePair);
+      pairingInfo.innerHTML = `<span class="not-paired-text">Waiting for daemon</span><button class="btn btn-secondary" id="reconnectBtn">Retry</button>`;
+      document.getElementById("reconnectBtn")!.addEventListener("click", handleReconnect);
     }
   } catch {
     statusDot.classList.remove("connected");
@@ -51,10 +58,10 @@ async function updateStatus(): Promise<void> {
   }
 }
 
-async function handlePair(): Promise<void> {
+async function handleReconnect(): Promise<void> {
   const response = await send({ type: "pair" });
   if (response.success !== true && typeof response.error === "string") {
-    console.warn(`[OpenBridge] Pair failed: ${response.error}`);
+    console.warn(`[OpenBridge] Reconnect failed: ${response.error}`);
     await new Promise((resolve) => setTimeout(resolve, 1200));
   }
   await updateStatus();

@@ -19,11 +19,7 @@ export class NavigateHandler implements ToolHandler {
     let tabId: number;
 
     if (newTab) {
-      const waitForLoad = waitUntil !== "none"
-        ? this.createLoadListener(waitUntil, timeoutMs)
-        : undefined;
-
-      const tab = await chrome.tabs.create({ url, active: true });
+      const tab = await chrome.tabs.create({ url: "about:blank", active: true });
       if (tab.id == null) {
         return {
           error: {
@@ -41,8 +37,14 @@ export class NavigateHandler implements ToolHandler {
         } catch {}
       }
 
+      const waitForLoad = waitUntil !== "none"
+        ? this.waitForNextLoad(tabId, waitUntil, timeoutMs)
+        : undefined;
+
+      await cdpExecutor.sendCommand("Page.navigate", { url });
+
       if (waitForLoad) {
-        const loaded = await waitForLoad(tabId);
+        const loaded = await waitForLoad;
         if (!loaded) {
           return {
             data: { url, tabId, loaded: false, timeout: true },
@@ -61,13 +63,13 @@ export class NavigateHandler implements ToolHandler {
       tabId = cdpExecutor.activeTabId;
 
       const waitForLoad = waitUntil !== "none"
-        ? this.createLoadListener(waitUntil, timeoutMs)
+        ? this.waitForNextLoad(tabId, waitUntil, timeoutMs)
         : undefined;
 
       await cdpExecutor.sendCommand("Page.navigate", { url });
 
       if (waitForLoad) {
-        const loaded = await waitForLoad(tabId);
+        const loaded = await waitForLoad;
         if (!loaded) {
           return {
             data: { url, tabId, loaded: false, timeout: true },
@@ -76,7 +78,7 @@ export class NavigateHandler implements ToolHandler {
       }
     }
 
-    const groupInfo = sessionId ? tabGroupManager.getGroupInfo(sessionId) : undefined;
+    const groupInfo = sessionId ? await tabGroupManager.getGroupInfo(sessionId) : undefined;
 
     return {
       data: {
@@ -88,8 +90,8 @@ export class NavigateHandler implements ToolHandler {
     };
   }
 
-  private createLoadListener(waitUntil: string, timeoutMs: number): (tabId: number) => Promise<boolean> {
-    return (tabId: number) => new Promise((resolve) => {
+  private waitForNextLoad(tabId: number, waitUntil: string, timeoutMs: number): Promise<boolean> {
+    return new Promise((resolve) => {
       let settled = false;
 
       const finish = (result: boolean) => {
@@ -115,12 +117,6 @@ export class NavigateHandler implements ToolHandler {
       };
 
       chrome.tabs.onUpdated.addListener(listener);
-
-      chrome.tabs.get(tabId).then((tab) => {
-        if (tab.status === "complete" && !settled) {
-          finish(true);
-        }
-      }).catch(() => {});
     });
   }
 }

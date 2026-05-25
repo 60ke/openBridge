@@ -2,3 +2,5 @@ node_modules
 dist
 .wxt
 *.crx
+.DS_Store
+.openbridge-data/

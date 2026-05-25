@@ -33,7 +33,7 @@ export class NewTabHandler implements ToolHandler {
       }
     }
 
-    const groupInfo = sessionId ? tabGroupManager.getGroupInfo(sessionId) : undefined;
+    const groupInfo = sessionId ? await tabGroupManager.getGroupInfo(sessionId) : undefined;
 
     return {
       data: {

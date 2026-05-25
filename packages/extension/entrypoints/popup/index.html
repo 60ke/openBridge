@@ -66,6 +66,9 @@
     .not-paired-text {
       color: #e74c3c;
     }
+    .pending-text {
+      color: #f1c40f;
+    }
     .btn {
       padding: 4px 12px;
       border: none;
@@ -88,6 +91,13 @@
     }
     .btn-danger:hover {
       background: #a93226;
+    }
+    .btn-secondary {
+      background: #34495e;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #2c3e50;
     }
     .toggle-row {
       display: flex;
@@ -198,8 +208,7 @@
   <div class="section">
     <div class="section-title">Pairing</div>
     <div class="pairing-info" id="pairingInfo">
-      <span class="not-paired-text">Pairing Required</span>
-      <button class="btn btn-primary" id="pairBtn">Pair</button>
+      <span class="pending-text">Authorizing...</span>
     </div>
   </div>
 

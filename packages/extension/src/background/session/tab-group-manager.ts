@@ -21,8 +21,8 @@ export class TabGroupManager {
   private sessionGroups = new Map<string, SessionGroupInfo>();
   private sessionTabs = new Map<string, Set<number>>();
   private colorIndex = 0;
-  private dirty = false;
   private saveTimer: ReturnType<typeof setTimeout> | null = null;
+  private ready: Promise<void>;
 
   constructor() {
     if (typeof chrome !== "undefined" && chrome.tabGroups) {
@@ -38,7 +38,7 @@ export class TabGroupManager {
       });
     }
 
-    this.loadFromStorage();
+    this.ready = this.loadFromStorage();
   }
 
   private async loadFromStorage(): Promise<void> {
@@ -102,6 +102,8 @@ export class TabGroupManager {
   }
 
   async addTabToSession(sessionId: string, tabId: number, groupTitle?: string, groupColor?: string): Promise<void> {
+    await this.ready;
+
     const color = (groupColor as TabGroupColor) ?? this.nextColor();
     const title = groupTitle ?? `agent:${sessionId.slice(0, 8)}`;
 
@@ -139,15 +141,18 @@ export class TabGroupManager {
     this.scheduleSave();
   }
 
-  getManagedTabIds(sessionId: string): number[] {
+  async getManagedTabIds(sessionId: string): Promise<number[]> {
+    await this.ready;
     return Array.from(this.sessionTabs.get(sessionId) ?? []);
   }
 
-  getGroupInfo(sessionId: string): SessionGroupInfo | undefined {
+  async getGroupInfo(sessionId: string): Promise<SessionGroupInfo | undefined> {
+    await this.ready;
     return this.sessionGroups.get(sessionId);
   }
 
-  getGroupInfoByGroupId(groupId: number): { sessionId: string; info: SessionGroupInfo } | undefined {
+  async getGroupInfoByGroupId(groupId: number): Promise<{ sessionId: string; info: SessionGroupInfo } | undefined> {
+    await this.ready;
     for (const [sessionId, info] of this.sessionGroups.entries()) {
       if (info.groupId === groupId) {
         return { sessionId, info };
@@ -156,18 +161,21 @@ export class TabGroupManager {
     return undefined;
   }
 
-  removeTabFromSession(sessionId: string, tabId: number): void {
+  async removeTabFromSession(sessionId: string, tabId: number): Promise<void> {
+    await this.ready;
     this.sessionTabs.get(sessionId)?.delete(tabId);
     this.scheduleSave();
   }
 
-  clearSession(sessionId: string): void {
+  async clearSession(sessionId: string): Promise<void> {
+    await this.ready;
     this.sessionGroups.delete(sessionId);
     this.sessionTabs.delete(sessionId);
     this.scheduleSave();
   }
 
-  getAllSessionIds(): string[] {
+  async getAllSessionIds(): Promise<string[]> {
+    await this.ready;
     return Array.from(this.sessionGroups.keys());
   }
 }

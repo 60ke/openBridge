@@ -8,7 +8,6 @@ import type { CommandPayload, CommandResultPayload, ErrorPayload } from "@openbr
 export const wsClient = new BridgeWsClient();
 export const reconnectManager = new ReconnectManager(wsClient);
 
-let pendingPairSecret: string | null = null;
 const DEFAULT_BRIDGE_URL = "ws://127.0.0.1:10087/bridge";
 
 async function addRecentOperation(name: string): Promise<void> {
@@ -81,7 +80,9 @@ export default defineBackground(() => {
 
   wsClient.on("pair-challenge", (payload: unknown) => {
     const challenge = payload as { challenge: string };
-    pendingPairSecret = challenge.challenge;
+    if (challenge.challenge) {
+      wsClient.confirmPairing(challenge.challenge);
+    }
   });
 
   wsClient.on("command", (payload: unknown) => {
@@ -182,25 +183,16 @@ export default defineBackground(() => {
               connected: wsClient.state === "connected" && wsClient.isAuthorized,
               paired: wsClient.isAuthorized,
               hasStoredToken: !!result.openbridge_token,
+              autoPairing: wsClient.state === "connected" && !wsClient.isAuthorized,
               url: wsClient.state === "connected" ? activeUrl : displayUrl,
             });
           });
           return true;
         }
         case "pair": {
-          if (pendingPairSecret) {
-            wsClient.confirmPairing(pendingPairSecret);
-            pendingPairSecret = null;
-            sendResponse({ success: true });
-          } else {
-            wsClient.clearToken();
-            wsClient.disconnect();
-            wsClient.connect();
-            sendResponse({
-              success: false,
-              error: "Waiting for pairing challenge. Please retry in a second.",
-            });
-          }
+          wsClient.disconnect();
+          wsClient.connect();
+          sendResponse({ success: true });
           break;
         }
         case "resetPairing": {

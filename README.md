@@ -1,34 +1,92 @@
 # OpenBridge
 
-OpenBridge is a local browser bridge for MCP-capable AI clients.
+[中文说明](./README.zh-CN.md)
 
-## Architecture
+OpenBridge is a local browser bridge for AI agents. It lets MCP-capable clients and Codex-style skills control the user's real Chrome browser through a local daemon and a Chrome extension.
 
-- `openbridge serve`: starts the long-running local bridge daemon
-- `openbridge mcp`: starts a stdio MCP shim that attaches to the running daemon
-- Chrome extension: connects to the bridge daemon over local WebSocket
+## What It Does
 
-This split lets one local browser connection be reused by multiple future MCP sessions, which is closer to the Kimi-style experience than binding browser control to a single stdio process.
+OpenBridge provides a Kimi WebBridge-like architecture:
 
-## Local setup
+```text
+AI client / MCP client / Codex skill
+        |
+        | stdio MCP or local HTTP API
+        v
+OpenBridge daemon
+        |
+        | ws://127.0.0.1:10087/bridge
+        v
+OpenBridge Chrome extension
+        |
+        v
+User's real Chrome tabs
+```
+
+The daemon is long-running, while `openbridge mcp` is a lightweight stdio shim that attaches to the daemon. This allows one browser connection to be reused by multiple local AI sessions.
+
+## Features
+
+- Real Chrome tab control through a browser extension
+- Automatic extension authorization after first connection
+- Local-only daemon and API
+- MCP stdio support
+- Codex-style skill support through the local HTTP API
+- Tab creation, navigation, selection, listing, and closing
+- Session-based tab groups with color labels
+- Accessibility snapshots with stable refs
+- Click, coordinate click, fill, type, key input, and shortcuts
+- Screenshot, PDF export, file upload
+- Network event observation
+- Pause control and optional JavaScript execution permission
+
+## Install
 
 ```bash
 ./install.sh
 ```
 
-Then load the unpacked extension from:
+Then load the unpacked Chrome extension from:
 
 ```text
 packages/extension/.output/chrome-mv3
 ```
 
-Open the extension popup and complete pairing.
+Open `chrome://extensions`, enable Developer Mode, choose **Load unpacked**, and select the directory above.
 
-## MCP config
+After the daemon and extension are both running, the extension authorizes automatically. The popup should show `Authorized`.
 
-Example config is in [openbridge-mcp-config.example.json](/Users/k/Desktop/openBridge/openbridge-mcp-config.example.json).
+## Useful Commands
 
-Core command:
+```bash
+node packages/daemon/dist/cli/index.js serve
+node packages/daemon/dist/cli/index.js mcp
+node packages/daemon/dist/cli/index.js status
+node packages/daemon/dist/cli/index.js doctor
+node packages/daemon/dist/cli/index.js reset-pairing
+```
+
+## Local API
+
+The daemon exposes a local HTTP API on `127.0.0.1:10088`.
+
+Health check:
+
+```bash
+curl -s http://127.0.0.1:10088/health
+```
+
+Run a browser command:
+
+```bash
+curl -s -X POST http://127.0.0.1:10088/command \
+  -H 'Content-Type: application/json' \
+  -d '{"toolName":"browser_list_tabs","args":{}}'
+```
+
+## MCP Config
+
+Example config is in [openbridge-mcp-config.example.json](./openbridge-mcp-config.example.json).
 
 ```json
 {
@@ -36,7 +94,7 @@ Core command:
     "openbridge": {
       "command": "node",
       "args": [
-        "/Users/k/Desktop/openBridge/packages/daemon/dist/cli/index.js",
+        "/absolute/path/to/openBridge/packages/daemon/dist/cli/index.js",
         "mcp"
       ]
     }
@@ -44,11 +102,52 @@ Core command:
 }
 ```
 
-## Useful commands
+## Browser Tools
+
+OpenBridge currently supports:
+
+```text
+browser_list_tabs
+browser_new_tab
+browser_select_tab
+browser_navigate
+browser_snapshot
+browser_click
+browser_mouse_click
+browser_fill
+browser_type
+browser_key_type
+browser_send_keys
+browser_screenshot
+browser_evaluate
+browser_close_tab
+browser_close_session
+browser_find_tab
+browser_upload
+browser_save_as_pdf
+browser_network
+```
+
+## Security Model
+
+- The daemon binds to loopback only.
+- The extension connects only to the local daemon.
+- Browser control can be paused from the extension popup.
+- `browser_evaluate` is disabled by default and must be explicitly enabled.
+- Pairing tokens are local machine state and should not be committed.
+- `.openbridge-data/` is ignored by Git.
+
+## Development
 
 ```bash
-node packages/daemon/dist/cli/index.js serve
-node packages/daemon/dist/cli/index.js mcp
-node packages/daemon/dist/cli/index.js status
-node packages/daemon/dist/cli/index.js doctor
+pnpm install
+pnpm typecheck
+pnpm build
 ```
+
+Reload the unpacked extension after rebuilding:
+
+```text
+packages/extension/.output/chrome-mv3
+```
+

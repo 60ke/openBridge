@@ -29,8 +29,8 @@ export class CloseTabHandler implements ToolHandler {
 
     await chrome.tabs.remove(tabId);
 
-    for (const sessionId of tabGroupManager.getAllSessionIds()) {
-      tabGroupManager.removeTabFromSession(sessionId, tabId);
+    for (const sessionId of await tabGroupManager.getAllSessionIds()) {
+      await tabGroupManager.removeTabFromSession(sessionId, tabId);
     }
 
     return {

@@ -23,7 +23,7 @@ export class SelectTabHandler implements ToolHandler {
     }
 
     const tab = await chrome.tabs.get(tabId);
-    const groupInfo = sessionId ? tabGroupManager.getGroupInfo(sessionId) : undefined;
+    const groupInfo = sessionId ? await tabGroupManager.getGroupInfo(sessionId) : undefined;
 
     return {
       data: {
