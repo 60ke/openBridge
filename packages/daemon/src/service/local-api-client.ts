@@ -1,6 +1,8 @@
+import { getDefaultApiPort } from "../runtime/runtime-state.js";
+
 export class LocalApiClient {
   constructor(
-    private basePort = 10088,
+    private basePort = getDefaultApiPort(),
     private host = "127.0.0.1",
   ) {}
 

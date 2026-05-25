@@ -6,7 +6,7 @@ description: |
 
 # OpenBridge WebBridge
 
-Control the user's real Chrome browser via OpenBridge at `http://127.0.0.1:{{API_PORT}}`.
+Control the user's real Chrome browser via the local OpenBridge daemon. The daemon writes its active ports to `{{ROOT_DIR}}/.openbridge-data/runtime.json`, so commands should read the current API port instead of assuming the default.
 
 ## Health check
 
@@ -14,7 +14,8 @@ Always check health before browser operations:
 
 ```bash
 node "{{ROOT_DIR}}/packages/daemon/dist/cli/index.js" status
-curl -s http://127.0.0.1:{{API_PORT}}/health
+API_PORT="$(node -e "const fs=require('fs'); const p='{{ROOT_DIR}}/.openbridge-data/runtime.json'; let port={{API_PORT}}; try { const r=JSON.parse(fs.readFileSync(p,'utf8')); port=r.apiPort || port; } catch {} console.log(port)")"
+curl -s "http://127.0.0.1:${API_PORT}/health"
 ```
 
 Healthy means:
@@ -26,7 +27,7 @@ Healthy means:
 If the daemon is not running:
 
 ```bash
-"{{ROOT_DIR}}/install.sh"
+node "{{ROOT_DIR}}/packages/daemon/dist/cli/index.js" start
 ```
 
 If the daemon is running but `connectedSessions` is empty, ask the user to load or reload the Chrome extension from:
@@ -38,7 +39,8 @@ If the daemon is running but `connectedSessions` is empty, ask the user to load 
 ## Command Format
 
 ```bash
-curl -s -X POST http://127.0.0.1:{{API_PORT}}/command \
+API_PORT="$(node -e "const fs=require('fs'); const p='{{ROOT_DIR}}/.openbridge-data/runtime.json'; let port={{API_PORT}}; try { const r=JSON.parse(fs.readFileSync(p,'utf8')); port=r.apiPort || port; } catch {} console.log(port)")"
+curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
   -H 'Content-Type: application/json' \
   -d '{"toolName":"browser_list_tabs","args":{}}'
 ```
@@ -46,7 +48,8 @@ curl -s -X POST http://127.0.0.1:{{API_PORT}}/command \
 Pass `sessionId` inside `args` when isolating browser work into a colored tab group:
 
 ```bash
-curl -s -X POST http://127.0.0.1:{{API_PORT}}/command \
+API_PORT="$(node -e "const fs=require('fs'); const p='{{ROOT_DIR}}/.openbridge-data/runtime.json'; let port={{API_PORT}}; try { const r=JSON.parse(fs.readFileSync(p,'utf8')); port=r.apiPort || port; } catch {} console.log(port)")"
+curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
   -H 'Content-Type: application/json' \
   -d '{"toolName":"browser_navigate","args":{"url":"https://www.google.com","newTab":true,"sessionId":"research","groupTitle":"OpenBridge Research"}}'
 ```

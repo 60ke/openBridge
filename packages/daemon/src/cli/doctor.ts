@@ -5,6 +5,8 @@ import { execSync } from "node:child_process";
 import WebSocket from "ws";
 import { PairingManager } from "../bridge/pairing.js";
 import { LocalApiClient } from "../service/local-api-client.js";
+import { DATA_DIR, DEFAULT_API_PORT, DEFAULT_WS_PORT, ROOT_DIR } from "../runtime/paths.js";
+import { getDefaultApiPort, getDefaultWsPort, readRuntimeState } from "../runtime/runtime-state.js";
 
 interface DoctorResult {
   label: string;
@@ -13,7 +15,6 @@ interface DoctorResult {
   fix?: string;
 }
 
-const ROOT_DIR = path.resolve(import.meta.dirname, "../../../../");
 const EXTENSION_BUILD_DIR = path.join(ROOT_DIR, "packages/extension/.output/chrome-mv3");
 const DAEMON_DIST_DIR = path.join(ROOT_DIR, "packages/daemon/dist");
 const SHARED_DIST_DIR = path.join(ROOT_DIR, "packages/shared/dist");
@@ -23,8 +24,9 @@ export async function doctorCommand(options?: {
   port?: number;
   apiPort?: number;
 }): Promise<void> {
-  const port = options?.port ?? 10087;
-  const apiPort = options?.apiPort ?? 10088;
+  const runtime = readRuntimeState();
+  const port = options?.port ?? runtime?.wsPort ?? getDefaultWsPort() ?? DEFAULT_WS_PORT;
+  const apiPort = options?.apiPort ?? runtime?.apiPort ?? getDefaultApiPort() ?? DEFAULT_API_PORT;
   const results: DoctorResult[] = [];
 
   results.push(checkNodeVersion());
@@ -188,7 +190,7 @@ async function checkApiPortAvailable(port: number): Promise<DoctorResult> {
 }
 
 function checkPairingStatus(): DoctorResult {
-  const pairingManager = new PairingManager();
+  const pairingManager = new PairingManager(DATA_DIR);
   const isPaired = pairingManager.isPaired();
   return {
     label: "Pairing status",
@@ -199,7 +201,7 @@ function checkPairingStatus(): DoctorResult {
 }
 
 function checkDataDir(): DoctorResult {
-  const dataDir = path.join(process.cwd(), ".openbridge-data");
+  const dataDir = DATA_DIR;
   const exists = fs.existsSync(dataDir);
   if (exists) {
     const files = fs.readdirSync(dataDir);

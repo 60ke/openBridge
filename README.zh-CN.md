@@ -103,6 +103,10 @@ curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh |
 ## 常用命令
 
 ```bash
+node packages/daemon/dist/cli/index.js start
+node packages/daemon/dist/cli/index.js stop
+node packages/daemon/dist/cli/index.js restart
+node packages/daemon/dist/cli/index.js logs --follow
 node packages/daemon/dist/cli/index.js serve
 node packages/daemon/dist/cli/index.js mcp
 node packages/daemon/dist/cli/index.js status
@@ -112,18 +116,20 @@ node packages/daemon/dist/cli/index.js reset-pairing
 
 ## 本地 API
 
-daemon 默认在 `127.0.0.1:10088` 暴露本地 HTTP API。
+daemon 默认在 `127.0.0.1:10088` 暴露本地 HTTP API。如果端口被占用，OpenBridge 会自动使用下一个可用端口，并把实际运行状态写入 `.openbridge-data/runtime.json`。
 
 健康检查：
 
 ```bash
-curl -s http://127.0.0.1:10088/health
+API_PORT="$(node -e "const fs=require('fs'); let p=10088; try { p=JSON.parse(fs.readFileSync('.openbridge-data/runtime.json','utf8')).apiPort || p } catch {} console.log(p)")"
+curl -s "http://127.0.0.1:${API_PORT}/health"
 ```
 
 执行浏览器命令：
 
 ```bash
-curl -s -X POST http://127.0.0.1:10088/command \
+API_PORT="$(node -e "const fs=require('fs'); let p=10088; try { p=JSON.parse(fs.readFileSync('.openbridge-data/runtime.json','utf8')).apiPort || p } catch {} console.log(p)")"
+curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
   -H 'Content-Type: application/json' \
   -d '{"toolName":"browser_list_tabs","args":{}}'
 ```
@@ -218,6 +224,10 @@ browser_network
 - `browser_evaluate` 默认关闭，需要用户显式开启。
 - 配对 token 是本机运行态，不应该提交到仓库。
 - `.openbridge-data/` 已加入 Git 忽略。
+
+## 设计致谢
+
+OpenBridge 的三层架构（守护进程 + 扩展 + 本地 API）借鉴了 [Kimi WebBridge](https://kimi.moonshot.cn)（月之暗面）已验证的成熟模型。会话管理和标签租约（Tab Leases）等设计参考了 [CodeX](https://codex.openai.com)（OpenAI），工具注册表模式参考了 Kimi WebBridge。OpenBridge 在这些设计理念的基础上，作为一个独立的开源项目进行实现。
 
 ## 开发
 

@@ -6,6 +6,7 @@ import { pairCommand } from "./pair.js";
 import { resetPairingCommand } from "./reset-pairing.js";
 import { statusCommand } from "./status.js";
 import { mcpCommand } from "./mcp.js";
+import { logsCommand, restartCommand, startCommand, stopCommand } from "./lifecycle.js";
 
 const args = process.argv.slice(2);
 const command = args[0] || "serve";
@@ -26,6 +27,22 @@ async function main(): Promise<void> {
       await serveCommand({ port, apiPort });
       break;
     }
+    case "start": {
+      const { port, apiPort } = parsePortOptions(args);
+      await startCommand({ port, apiPort });
+      break;
+    }
+    case "stop":
+      await stopCommand();
+      break;
+    case "restart": {
+      const { port, apiPort } = parsePortOptions(args);
+      await restartCommand({ port, apiPort });
+      break;
+    }
+    case "logs":
+      await logsCommand({ follow: args.includes("--follow") || args.includes("-f") });
+      break;
     case "mcp": {
       let apiPort: number | undefined;
       const apiPortIndex = args.indexOf("--api-port");
@@ -61,6 +78,10 @@ async function main(): Promise<void> {
     default:
       console.log(`Usage: openbridge <command>`);
       console.log(`Commands:`);
+      console.log(`  start           Start the OpenBridge daemon in the background`);
+      console.log(`  stop            Stop the background OpenBridge daemon`);
+      console.log(`  restart         Restart the background OpenBridge daemon`);
+      console.log(`  logs            Show daemon logs (--follow to tail)`);
       console.log(`  serve           Start the OpenBridge daemon (default)`);
       console.log(`  mcp             Start stdio MCP shim and attach to daemon`);
       console.log(`  doctor          Run diagnostics checks`);
@@ -69,6 +90,20 @@ async function main(): Promise<void> {
       console.log(`  status          Check daemon status`);
       process.exit(1);
   }
+}
+
+function parsePortOptions(args: string[]): { port?: number; apiPort?: number } {
+  let port: number | undefined;
+  const portIndex = args.indexOf("--port");
+  if (portIndex !== -1 && args[portIndex + 1]) {
+    port = parseInt(args[portIndex + 1], 10);
+  }
+  let apiPort: number | undefined;
+  const apiPortIndex = args.indexOf("--api-port");
+  if (apiPortIndex !== -1 && args[apiPortIndex + 1]) {
+    apiPort = parseInt(args[apiPortIndex + 1], 10);
+  }
+  return { port, apiPort };
 }
 
 main().catch((err) => {

@@ -4,12 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA_DIR="$ROOT_DIR/.openbridge-data"
 LOG_FILE="$DATA_DIR/daemon.log"
-PID_FILE="$DATA_DIR/daemon.pid"
 WS_PORT="${OPENBRIDGE_WS_PORT:-10087}"
 API_PORT="${OPENBRIDGE_API_PORT:-10088}"
 INSTALL_SKILL=1
 START_DAEMON=1
-TMUX_SESSION="${OPENBRIDGE_TMUX_SESSION:-openbridge-daemon}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -47,7 +45,6 @@ Options:
 Environment:
   OPENBRIDGE_WS_PORT   WebSocket port, default 10087
   OPENBRIDGE_API_PORT  Local API port, default 10088
-  OPENBRIDGE_TMUX_SESSION  tmux session name, default openbridge-daemon
 EOF
 }
 
@@ -153,39 +150,18 @@ if [[ "$INSTALL_SKILL" -eq 1 ]]; then
 fi
 
 if [[ "$START_DAEMON" -eq 1 ]]; then
-  if command -v tmux &>/dev/null && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
-    info "Stopping existing tmux daemon session ($TMUX_SESSION)..."
-    tmux kill-session -t "$TMUX_SESSION" || true
-  fi
+  info "Starting OpenBridge daemon..."
+  node "$ROOT_DIR/packages/daemon/dist/cli/index.js" restart \
+    --port "$WS_PORT" \
+    --api-port "$API_PORT"
 
-  if [[ -f "$PID_FILE" ]]; then
-    OLD_PID="$(cat "$PID_FILE" || true)"
-    if [[ -n "${OLD_PID}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
-      info "Stopping existing OpenBridge daemon (PID $OLD_PID)..."
-      kill "$OLD_PID" || true
-      sleep 1
-    fi
-    rm -f "$PID_FILE"
-  fi
-
-  info "Starting OpenBridge daemon on WS port $WS_PORT, API port $API_PORT..."
-  if command -v tmux &>/dev/null; then
-    tmux new-session -d -s "$TMUX_SESSION" \
-      "cd '$ROOT_DIR' && OPENBRIDGE_NO_MCP=1 node '$ROOT_DIR/packages/daemon/dist/cli/index.js' serve --port '$WS_PORT' --api-port '$API_PORT' >>'$LOG_FILE' 2>&1"
-    sleep 0.5
-    DAEMON_PID="$(tmux list-panes -t "$TMUX_SESSION" -F '#{pane_pid}' 2>/dev/null | head -n 1 || true)"
-    echo "$DAEMON_PID" > "$PID_FILE"
+  RUNTIME_FILE="$DATA_DIR/runtime.json"
+  if [[ -f "$RUNTIME_FILE" ]]; then
+    API_PORT="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); console.log(r.apiPort)" "$RUNTIME_FILE")"
+    WS_PORT="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); console.log(r.wsPort)" "$RUNTIME_FILE")"
+    DAEMON_PID="$(node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync(process.argv[1],'utf8')); console.log(r.pid)" "$RUNTIME_FILE")"
   else
-    OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
-      --port "$WS_PORT" \
-      --api-port "$API_PORT" \
-      </dev/null >"$LOG_FILE" 2>&1 &
-    DAEMON_PID=$!
-    echo "$DAEMON_PID" > "$PID_FILE"
-  fi
-
-  if ! wait_for_local_api "$API_PORT" 20; then
-    sleep 1
+    DAEMON_PID=""
   fi
 
   if ! curl -fsS "http://127.0.0.1:$API_PORT/health" >/dev/null 2>&1; then
@@ -245,8 +221,8 @@ cat <<EOF
 EOF
 echo ""
 if [[ -n "${DAEMON_PID:-}" ]]; then
-  echo "To stop: kill $DAEMON_PID  (or: kill \$(cat $PID_FILE))"
+  echo "To stop: node $ROOT_DIR/packages/daemon/dist/cli/index.js stop"
 else
-  echo "To start: node $ROOT_DIR/packages/daemon/dist/cli/index.js serve --port $WS_PORT --api-port $API_PORT"
+  echo "To start: node $ROOT_DIR/packages/daemon/dist/cli/index.js start"
 fi
 echo "To diagnose: node $ROOT_DIR/packages/daemon/dist/cli/index.js doctor"

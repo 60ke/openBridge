@@ -9,9 +9,11 @@ import { logger } from "../diagnostics/logger.js";
 import type { EventPayload } from "@openbridge/shared";
 import { BridgeController } from "../service/bridge-controller.js";
 import { LocalApiServer } from "../service/local-api-server.js";
+import { DATA_DIR, DEFAULT_API_PORT, DEFAULT_WS_PORT, LOG_FILE, ROOT_DIR } from "../runtime/paths.js";
+import { clearRuntimeState, writeRuntimeState } from "../runtime/runtime-state.js";
 
 export async function serveCommand(options?: { port?: number; apiPort?: number }): Promise<void> {
-  const pairingManager = new PairingManager();
+  const pairingManager = new PairingManager(DATA_DIR);
   const authManager = new AuthManager(pairingManager);
   const permissionManager = new PermissionManager();
   const sessionManager = new SessionManager();
@@ -19,7 +21,7 @@ export async function serveCommand(options?: { port?: number; apiPort?: number }
   const requestQueue = new RequestQueue();
 
   const wsServer = new BridgeWebSocketServer(pairingManager, authManager, {
-    port: options?.port || 10087,
+    port: options?.port || DEFAULT_WS_PORT,
   });
   const controller = new BridgeController(
     wsServer,
@@ -28,7 +30,7 @@ export async function serveCommand(options?: { port?: number; apiPort?: number }
     requestQueue,
   );
   const localApiServer = new LocalApiServer(controller, {
-    port: options?.apiPort || 10088,
+    port: options?.apiPort || DEFAULT_API_PORT,
   });
 
   let cleanupTimer: ReturnType<typeof tabLeaseManager.startCleanupInterval> | undefined;
@@ -78,8 +80,18 @@ export async function serveCommand(options?: { port?: number; apiPort?: number }
 
   await wsServer.start();
   await localApiServer.start();
+  writeRuntimeState({
+    pid: process.pid,
+    host: "127.0.0.1",
+    wsPort: wsServer.getPort(),
+    apiPort: localApiServer.getPort(),
+    startedAt: new Date().toISOString(),
+    rootDir: ROOT_DIR,
+    logFile: LOG_FILE,
+  });
 
-  logger.info("OpenBridge daemon is running on WebSocket port", wsServer["port"]);
+  logger.info("OpenBridge runtime data directory", DATA_DIR);
+  logger.info("OpenBridge daemon is running on WebSocket port", wsServer.getPort());
   logger.info("OpenBridge local API is running on port", localApiServer.getPort());
 
   const shutdown = async () => {
@@ -90,6 +102,7 @@ export async function serveCommand(options?: { port?: number; apiPort?: number }
     requestQueue.clear();
     await localApiServer.stop();
     await wsServer.stop();
+    clearRuntimeState(process.pid);
     process.exit(0);
   };
 

@@ -104,6 +104,10 @@ curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh |
 ## Useful Commands
 
 ```bash
+node packages/daemon/dist/cli/index.js start
+node packages/daemon/dist/cli/index.js stop
+node packages/daemon/dist/cli/index.js restart
+node packages/daemon/dist/cli/index.js logs --follow
 node packages/daemon/dist/cli/index.js serve
 node packages/daemon/dist/cli/index.js mcp
 node packages/daemon/dist/cli/index.js status
@@ -113,18 +117,20 @@ node packages/daemon/dist/cli/index.js reset-pairing
 
 ## Local API
 
-The daemon exposes a local HTTP API on `127.0.0.1:10088`.
+The daemon exposes a local HTTP API on `127.0.0.1:10088` by default. If that port is occupied, OpenBridge automatically uses the next available port and writes the active runtime state to `.openbridge-data/runtime.json`.
 
 Health check:
 
 ```bash
-curl -s http://127.0.0.1:10088/health
+API_PORT="$(node -e "const fs=require('fs'); let p=10088; try { p=JSON.parse(fs.readFileSync('.openbridge-data/runtime.json','utf8')).apiPort || p } catch {} console.log(p)")"
+curl -s "http://127.0.0.1:${API_PORT}/health"
 ```
 
 Run a browser command:
 
 ```bash
-curl -s -X POST http://127.0.0.1:10088/command \
+API_PORT="$(node -e "const fs=require('fs'); let p=10088; try { p=JSON.parse(fs.readFileSync('.openbridge-data/runtime.json','utf8')).apiPort || p } catch {} console.log(p)")"
+curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
   -H 'Content-Type: application/json' \
   -d '{"toolName":"browser_list_tabs","args":{}}'
 ```
@@ -219,6 +225,10 @@ browser_network
 - `browser_evaluate` is disabled by default and must be explicitly enabled.
 - Pairing tokens are local machine state and should not be committed.
 - `.openbridge-data/` is ignored by Git.
+
+## Design Acknowledgments
+
+OpenBridge's three-layer architecture (daemon + extension + local API) follows the proven model pioneered by [Kimi WebBridge](https://kimi.moonshot.cn) (Moonshot AI). Key design influences include session management patterns inspired by [CodeX](https://codex.openai.com) (OpenAI) and the tool-registry approach from Kimi WebBridge. OpenBridge builds on these concepts as an independent open-source project.
 
 ## Development
 

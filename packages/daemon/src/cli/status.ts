@@ -1,35 +1,50 @@
 import WebSocket from "ws";
 import { PairingManager } from "../bridge/pairing.js";
 import { LocalApiClient } from "../service/local-api-client.js";
+import { DATA_DIR, DEFAULT_WS_PORT } from "../runtime/paths.js";
+import { isPidRunning, readRuntimeState } from "../runtime/runtime-state.js";
 
 export async function statusCommand(): Promise<void> {
-  const running = await checkDaemonRunning();
-  if (!running) {
-    console.log("Daemon is not running");
+  const runtime = readRuntimeState();
+  if (!runtime) {
+    console.log("Daemon: Not running (no runtime.json)");
+  } else if (!isPidRunning(runtime.pid)) {
+    console.log(`Daemon: Stale runtime state (PID ${runtime.pid} is not running)`);
   } else {
-    console.log("Daemon is running on port", running);
+    console.log(`Daemon: Running (PID ${runtime.pid})`);
+    console.log(`WebSocket: ws://${runtime.host}:${runtime.wsPort}/bridge`);
+    console.log(`Local API: http://${runtime.host}:${runtime.apiPort}`);
+    if (runtime.startedAt) console.log(`Started at: ${runtime.startedAt}`);
+    console.log(`Log file: ${runtime.logFile}`);
   }
 
-  const pairingManager = new PairingManager();
+  const pairingManager = new PairingManager(DATA_DIR);
   const isPaired = pairingManager.isPaired();
-  console.log("Pairing status:", isPaired ? "Paired" : "Not paired");
+  console.log("Pairing:", isPaired ? "Paired" : "Not paired");
 
   try {
-    const api = new LocalApiClient();
+    const api = new LocalApiClient(runtime?.apiPort);
     const health = await api.health();
-    const apiPort = health.port;
-    console.log("Local API:", typeof apiPort === "number" ? `Running on port ${apiPort}` : "Running");
+    const sessions = health.connectedSessions;
+    const sessionCount = Array.isArray(sessions) ? sessions.length : 0;
+    console.log(`Extension: ${sessionCount > 0 ? `Connected (${sessionCount})` : "Not connected"}`);
   } catch {
-    console.log("Local API: Not reachable");
+    const running = await checkDaemonRunning(runtime?.wsPort ?? DEFAULT_WS_PORT);
+    if (running) {
+      console.log(`Extension: Cannot query local API, but WebSocket is reachable on ${running}`);
+    } else {
+      console.log("Extension: Not connected");
+    }
   }
 }
 
-function checkDaemonRunning(): Promise<number | false> {
+function checkDaemonRunning(basePort: number): Promise<number | false> {
   return new Promise((resolve) => {
     let settled = false;
     let pending = 11;
 
-    for (let port = 10087; port <= 10097; port++) {
+    for (let offset = 0; offset <= 10; offset++) {
+      const port = basePort + offset;
       const ws = new WebSocket(`ws://127.0.0.1:${port}/bridge`);
       const timeout = setTimeout(() => {
         ws.close();

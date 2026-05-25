@@ -83,6 +83,10 @@ export class BridgeWebSocketServer extends EventEmitter {
     throw new Error(`Failed to start server: ports ${basePort}-${basePort + 10} are all in use`);
   }
 
+  getPort(): number {
+    return this.port;
+  }
+
   private setupServer(): void {
     if (!this.wss) return;
 
