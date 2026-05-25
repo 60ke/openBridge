@@ -24,7 +24,7 @@
   "scripts": {
     "build": "wxt build",
     "dev": "wxt",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "wxt prepare && tsc --noEmit"
   },
   "dependencies": {
     "@openbridge-org/shared": "workspace:^"
