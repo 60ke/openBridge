@@ -1,4 +1,4 @@
-name: Release Extension
+name: Release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  release-extension:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+          registry-url: https://registry.npmjs.org
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -36,39 +37,91 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Resolve Release Metadata
+        run: |
+          set -euo pipefail
+          extension_version="$(node -p "require('./packages/extension/package.json').version")"
+          daemon_version="$(node -p "require('./packages/daemon/package.json').version")"
+          shared_version="$(node -p "require('./packages/shared/package.json').version")"
+
+          if [[ "${daemon_version}" != "${shared_version}" || "${daemon_version}" != "${extension_version}" ]]; then
+            echo "Package versions must match for a release:"
+            echo "  shared:    ${shared_version}"
+            echo "  daemon:    ${daemon_version}"
+            echo "  extension: ${extension_version}"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="v${extension_version}"
+          fi
+
+          echo "RELEASE_VERSION=${extension_version}" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
+
+      - name: Publish NPM Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          publish_if_needed() {
+            local dir="$1"
+            local name version
+            name="$(node -p "require('./${dir}/package.json').name")"
+            version="$(node -p "require('./${dir}/package.json').version")"
+
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "${name}@${version} already exists, skipping"
+              return 0
+            fi
+
+            echo "Publishing ${name}@${version}"
+            npm publish "./${dir}" --access public
+          }
+
+          publish_if_needed packages/shared
+          publish_if_needed packages/daemon
+
       - name: Package Chrome Extension
         working-directory: packages/extension
         run: pnpm zip
 
-      - name: Prepare Release Asset
+      - name: Prepare Release Assets
         run: |
           set -euo pipefail
-          version="$(node -p "require('./packages/extension/package.json').version")"
           mkdir -p artifacts
-          cp packages/extension/.output/*-chrome.zip "artifacts/openbridge-extension-chrome-v${version}.zip"
-          unzip -t "artifacts/openbridge-extension-chrome-v${version}.zip"
-          echo "EXTENSION_VERSION=${version}" >> "$GITHUB_ENV"
-          echo "ASSET_PATH=artifacts/openbridge-extension-chrome-v${version}.zip" >> "$GITHUB_ENV"
 
-      - name: Resolve Release Tag
-        run: |
-          set -euo pipefail
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            tag="${GITHUB_REF_NAME}"
-          else
-            tag="v${EXTENSION_VERSION}"
-          fi
-          echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
+          cp packages/extension/.output/*-chrome.zip "artifacts/openbridge-extension-chrome-v${RELEASE_VERSION}.zip"
+          unzip -t "artifacts/openbridge-extension-chrome-v${RELEASE_VERSION}.zip"
+
+          npm pack ./packages/shared --pack-destination artifacts
+          npm pack ./packages/daemon --pack-destination artifacts
+
+          find artifacts -maxdepth 1 -type f -print
 
       - name: Create Or Update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          notes="OpenBridge ${RELEASE_TAG}
+
+Assets:
+- Chrome Web Store package: openbridge-extension-chrome-v${RELEASE_VERSION}.zip
+- NPM package tarballs for @openbridge-org/shared and @openbridge-org/daemon
+
+Published NPM packages:
+- @openbridge-org/shared@${RELEASE_VERSION}
+- @openbridge-org/daemon@${RELEASE_VERSION}"
+
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
-            gh release upload "${RELEASE_TAG}" "${ASSET_PATH}" --clobber
+            gh release upload "${RELEASE_TAG}" artifacts/* --clobber
+            gh release edit "${RELEASE_TAG}" --title "OpenBridge ${RELEASE_TAG}" --notes "${notes}"
           else
-            gh release create "${RELEASE_TAG}" "${ASSET_PATH}" \
+            gh release create "${RELEASE_TAG}" artifacts/* \
               --title "OpenBridge ${RELEASE_TAG}" \
-              --notes "Chrome extension package for OpenBridge ${RELEASE_TAG}."
+              --notes "${notes}"
           fi
