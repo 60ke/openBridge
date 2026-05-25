@@ -46,6 +46,14 @@ The daemon is long-running, while `openbridge mcp` is a lightweight stdio shim t
 ./install.sh
 ```
 
+The installer will:
+
+- install dependencies and build the daemon, shared package, and extension
+- start the OpenBridge daemon in the background
+- install the `openbridge-webbridge` skill for Codex-style clients
+- print the Chrome extension loading path
+- keep MCP available as an optional standard interface
+
 Then load the unpacked Chrome extension from:
 
 ```text
@@ -54,7 +62,14 @@ packages/extension/.output/chrome-mv3
 
 Open `chrome://extensions`, enable Developer Mode, choose **Load unpacked**, and select the directory above.
 
-After the daemon and extension are both running, the extension authorizes automatically. The popup should show `Authorized`.
+After the daemon and extension are both running, the extension authorizes automatically. The popup should show `Authorized`. Codex can then use the installed skill to call `http://127.0.0.1:10088/command` directly, without requiring OpenBridge to appear in an MCP server list.
+
+Installer options:
+
+```bash
+./install.sh --no-skill
+./install.sh --no-start
+```
 
 ## Useful Commands
 
@@ -85,6 +100,8 @@ curl -s -X POST http://127.0.0.1:10088/command \
 ```
 
 ## MCP Config
+
+The default smooth path is `skill + daemon local API`. MCP is still supported as a standard integration surface.
 
 Example config is in [openbridge-mcp-config.example.json](./openbridge-mcp-config.example.json).
 
@@ -150,4 +167,3 @@ Reload the unpacked extension after rebuilding:
 ```text
 packages/extension/.output/chrome-mv3
 ```
-

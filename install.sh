@@ -7,6 +7,8 @@ LOG_FILE="$DATA_DIR/daemon.log"
 PID_FILE="$DATA_DIR/daemon.pid"
 WS_PORT="${OPENBRIDGE_WS_PORT:-10087}"
 API_PORT="${OPENBRIDGE_API_PORT:-10088}"
+INSTALL_SKILL=1
+START_DAEMON=1
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -18,6 +20,82 @@ info()  { echo -e "${CYAN}==>${NC} $*"; }
 ok()    { echo -e "${GREEN}  ✓${NC} $*"; }
 warn()  { echo -e "${YELLOW}  ⚠${NC} $*"; }
 fail()  { echo -e "${RED}  ✗${NC} $*"; }
+
+usage() {
+  cat <<EOF
+Usage: ./install.sh [options]
+
+Options:
+  --no-skill   Build and start OpenBridge, but skip skill installation
+  --no-start   Build and install skill, but do not start the daemon
+  -h, --help   Show this help
+
+Environment:
+  OPENBRIDGE_WS_PORT   WebSocket port, default 10087
+  OPENBRIDGE_API_PORT  Local API port, default 10088
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --no-skill)
+      INSTALL_SKILL=0
+      shift
+      ;;
+    --no-start)
+      START_DAEMON=0
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      fail "Unknown option: $1"
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+install_skill_to_dir() {
+  local target_root="$1"
+  local skill_dir="$target_root/skills/openbridge-webbridge"
+  local template="$ROOT_DIR/skills/openbridge-webbridge/SKILL.md.template"
+
+  if [[ ! -f "$template" ]]; then
+    warn "Skill template not found: $template"
+    return 1
+  fi
+
+  mkdir -p "$skill_dir"
+  sed \
+    -e "s|{{ROOT_DIR}}|$ROOT_DIR|g" \
+    -e "s|{{API_PORT}}|$API_PORT|g" \
+    "$template" > "$skill_dir/SKILL.md"
+  ok "Installed OpenBridge skill: $skill_dir/SKILL.md"
+}
+
+install_skills() {
+  info "Installing OpenBridge skill..."
+
+  local installed=0
+
+  if [[ -n "${CODEX_HOME:-}" ]]; then
+    install_skill_to_dir "$CODEX_HOME" && installed=1
+  fi
+
+  install_skill_to_dir "$HOME/.codex" && installed=1
+
+  if [[ -d "$HOME/.agents" ]]; then
+    install_skill_to_dir "$HOME/.agents" && installed=1
+  fi
+
+  if [[ "$installed" -eq 0 ]]; then
+    warn "No supported skill runtime found. You can copy the template from:"
+    echo "  $ROOT_DIR/skills/openbridge-webbridge/SKILL.md.template"
+  fi
+}
 
 mkdir -p "$DATA_DIR"
 
@@ -55,55 +133,72 @@ pnpm build
 
 ok "Build complete"
 
-if [[ -f "$PID_FILE" ]]; then
-  OLD_PID="$(cat "$PID_FILE" || true)"
-  if [[ -n "${OLD_PID}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
-    info "Stopping existing OpenBridge daemon (PID $OLD_PID)..."
-    kill "$OLD_PID" || true
-    sleep 1
+if [[ "$INSTALL_SKILL" -eq 1 ]]; then
+  install_skills
+fi
+
+if [[ "$START_DAEMON" -eq 1 ]]; then
+  if [[ -f "$PID_FILE" ]]; then
+    OLD_PID="$(cat "$PID_FILE" || true)"
+    if [[ -n "${OLD_PID}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
+      info "Stopping existing OpenBridge daemon (PID $OLD_PID)..."
+      kill "$OLD_PID" || true
+      sleep 1
+    fi
+    rm -f "$PID_FILE"
   fi
-  rm -f "$PID_FILE"
-fi
 
-info "Starting OpenBridge daemon on WS port $WS_PORT, API port $API_PORT..."
-OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
-  --port "$WS_PORT" \
-  --api-port "$API_PORT" \
-  >"$LOG_FILE" 2>&1 &
-DAEMON_PID=$!
-echo "$DAEMON_PID" > "$PID_FILE"
+  info "Starting OpenBridge daemon on WS port $WS_PORT, API port $API_PORT..."
+  OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
+    --port "$WS_PORT" \
+    --api-port "$API_PORT" \
+    >"$LOG_FILE" 2>&1 &
+  DAEMON_PID=$!
+  echo "$DAEMON_PID" > "$PID_FILE"
 
-sleep 2
+  sleep 2
 
-if ! kill -0 "$DAEMON_PID" 2>/dev/null; then
-  fail "Daemon failed to start. Check log: $LOG_FILE"
-  cat "$LOG_FILE"
-  exit 1
-fi
-ok "Daemon started (PID $DAEMON_PID)"
+  if ! kill -0 "$DAEMON_PID" 2>/dev/null; then
+    fail "Daemon failed to start. Check log: $LOG_FILE"
+    cat "$LOG_FILE"
+    exit 1
+  fi
+  ok "Daemon started (PID $DAEMON_PID)"
 
-info "Running health check..."
-sleep 1
-HEALTH=$(curl -s "http://127.0.0.1:$API_PORT/health" 2>/dev/null || echo "")
-if [[ -n "$HEALTH" ]]; then
-  ok "Local API is responding"
+  info "Running health check..."
+  sleep 1
+  HEALTH=$(curl -s "http://127.0.0.1:$API_PORT/health" 2>/dev/null || echo "")
+  if [[ -n "$HEALTH" ]]; then
+    ok "Local API is responding"
+  else
+    warn "Local API not responding yet (may need a moment)"
+  fi
 else
-  warn "Local API not responding yet (may need a moment)"
+  DAEMON_PID=""
+  warn "Skipped daemon startup (--no-start)"
 fi
 
 echo ""
-echo -e "${GREEN}OpenBridge is running!${NC}"
+if [[ -n "${DAEMON_PID:-}" ]]; then
+  echo -e "${GREEN}OpenBridge is running!${NC}"
+else
+  echo -e "${GREEN}OpenBridge is installed!${NC}"
+fi
 echo ""
-echo "  Daemon PID:    $DAEMON_PID"
+if [[ -n "${DAEMON_PID:-}" ]]; then
+  echo "  Daemon PID:    $DAEMON_PID"
+fi
 echo "  WebSocket:     ws://127.0.0.1:$WS_PORT/bridge"
 echo "  Local API:     http://127.0.0.1:$API_PORT"
 echo "  Log file:      $LOG_FILE"
 echo ""
 echo "Next steps:"
 echo "  1. Load the extension in Chrome from: $ROOT_DIR/packages/extension/.output/chrome-mv3"
-echo "     (chrome://extensions → Developer mode → Load unpacked)"
-echo "  2. Click the OpenBridge extension icon and press Pair"
-echo "  3. Add this MCP config to your AI client:"
+echo "     (chrome://extensions -> Developer mode -> Load unpacked)"
+echo "  2. The extension should authorize automatically once loaded."
+echo "  3. In Codex, use the installed openbridge-webbridge skill."
+echo ""
+echo "Optional MCP config:"
 echo ""
 cat <<EOF
 {
@@ -121,5 +216,9 @@ cat <<EOF
 }
 EOF
 echo ""
-echo "To stop: kill $DAEMON_PID  (or: kill \$(cat $PID_FILE))"
+if [[ -n "${DAEMON_PID:-}" ]]; then
+  echo "To stop: kill $DAEMON_PID  (or: kill \$(cat $PID_FILE))"
+else
+  echo "To start: node $ROOT_DIR/packages/daemon/dist/cli/index.js serve --port $WS_PORT --api-port $API_PORT"
+fi
 echo "To diagnose: node $ROOT_DIR/packages/daemon/dist/cli/index.js doctor"

@@ -46,6 +46,14 @@ daemon 是长期运行的本地服务，`openbridge mcp` 是一个轻量的 stdi
 ./install.sh
 ```
 
+安装脚本会：
+
+- 安装依赖并构建 daemon、shared 包和扩展
+- 在后台启动 OpenBridge daemon
+- 为 Codex-style 客户端安装 `openbridge-webbridge` skill
+- 输出 Chrome 扩展加载路径
+- 保留 MCP 作为可选标准接口
+
 然后在 Chrome 里加载 unpacked extension：
 
 ```text
@@ -54,7 +62,14 @@ packages/extension/.output/chrome-mv3
 
 打开 `chrome://extensions`，开启开发者模式，选择 **Load unpacked**，然后选择上面的目录。
 
-daemon 和扩展都启动后，扩展会自动授权连接。Popup 里应该显示 `Authorized`。
+daemon 和扩展都启动后，扩展会自动授权连接。Popup 里应该显示 `Authorized`。之后 Codex 可以通过已安装的 skill 直接调用 `http://127.0.0.1:10088/command`，不要求 OpenBridge 一定出现在 MCP 服务列表里。
+
+安装脚本参数：
+
+```bash
+./install.sh --no-skill
+./install.sh --no-start
+```
 
 ## 常用命令
 
@@ -85,6 +100,8 @@ curl -s -X POST http://127.0.0.1:10088/command \
 ```
 
 ## MCP 配置
+
+默认的顺滑体验走 `skill + daemon local API`。MCP 仍然保留，作为标准开放接口。
 
 示例配置见 [openbridge-mcp-config.example.json](./openbridge-mcp-config.example.json)。
 
@@ -150,4 +167,3 @@ pnpm build
 ```text
 packages/extension/.output/chrome-mv3
 ```
-

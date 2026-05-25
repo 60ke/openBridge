@@ -1,0 +1,88 @@
+---
+name: openbridge-webbridge
+description: |
+  Use OpenBridge to control the user's real Chrome browser through the local OpenBridge daemon. Trigger when the user mentions OpenBridge, asks to control the browser with OpenBridge, compare OpenBridge with Kimi WebBridge, open tabs, navigate, search, click, fill, screenshot, or inspect pages using OpenBridge. This skill uses the daemon HTTP API directly and does not require an MCP server to appear in the current session.
+---
+
+# OpenBridge WebBridge
+
+Control the user's real Chrome browser via OpenBridge at `http://127.0.0.1:{{API_PORT}}`.
+
+## Health check
+
+Always check health before browser operations:
+
+```bash
+node "{{ROOT_DIR}}/packages/daemon/dist/cli/index.js" status
+curl -s http://127.0.0.1:{{API_PORT}}/health
+```
+
+Healthy means:
+
+- local API is reachable
+- `connectedSessions` is non-empty
+- extension popup shows `Authorized`
+
+If the daemon is not running:
+
+```bash
+"{{ROOT_DIR}}/install.sh"
+```
+
+If the daemon is running but `connectedSessions` is empty, ask the user to load or reload the Chrome extension from:
+
+```text
+{{ROOT_DIR}}/packages/extension/.output/chrome-mv3
+```
+
+## Command Format
+
+```bash
+curl -s -X POST http://127.0.0.1:{{API_PORT}}/command \
+  -H 'Content-Type: application/json' \
+  -d '{"toolName":"browser_list_tabs","args":{}}'
+```
+
+Pass `sessionId` inside `args` when isolating browser work into a colored tab group:
+
+```bash
+curl -s -X POST http://127.0.0.1:{{API_PORT}}/command \
+  -H 'Content-Type: application/json' \
+  -d '{"toolName":"browser_navigate","args":{"url":"https://www.google.com","newTab":true,"sessionId":"research","groupTitle":"OpenBridge Research"}}'
+```
+
+## Tools
+
+| Tool | Args | Notes |
+|------|------|-------|
+| `browser_list_tabs` | `{}` | List tabs with group information |
+| `browser_new_tab` | `{url?,sessionId?,groupTitle?,groupColor?}` | Open a new tab, optionally in a colored session group |
+| `browser_select_tab` | `{tabId,sessionId?,groupTitle?,groupColor?}` | Select and attach to an existing tab |
+| `browser_navigate` | `{url,newTab?,sessionId?,groupTitle?,waitUntil?,timeoutMs?}` | Navigate current or new tab |
+| `browser_snapshot` | `{mode?,maxNodes?,includeHidden?}` | Default compact accessibility snapshot with `backend-*` refs |
+| `browser_click` | `{selector? ref?}` | Click CSS selector or snapshot backend ref |
+| `browser_mouse_click` | `{x,y,button?,clickCount?}` | Coordinate click via CDP |
+| `browser_fill` | `{selector,value}` | Fill a form field |
+| `browser_type` | `{text}` | Type into focused field |
+| `browser_key_type` | `{text}` | Insert text via CDP `Input.insertText` |
+| `browser_send_keys` | `{keys}` | Send key combo such as `Enter` |
+| `browser_screenshot` | `{}` | Returns base64 image data; avoid unless needed |
+| `browser_evaluate` | `{expression}` | Requires evaluate toggle enabled in popup |
+| `browser_close_tab` | `{tabId}` | Close a tab |
+| `browser_close_session` | `{sessionId,closeTabs?}` | Close tabs managed by a session |
+| `browser_find_tab` | `{query?,urlContains?,titleContains?,sessionId?,activate?}` | Find or activate tabs |
+| `browser_upload` | `{selector,paths}` | Set files on an input |
+| `browser_save_as_pdf` | `{printBackground?}` | Return PDF as base64 |
+| `browser_network` | `{action,limit?}` | `start`, `stop`, `get`, or `clear` network events |
+
+## Workflow
+
+- Prefer `browser_navigate` with `newTab:true` and a task-specific `sessionId` for new work.
+- Use `browser_snapshot` to inspect pages and get stable `backend-*` refs.
+- Use `browser_click` with refs from the latest snapshot when possible.
+- Use `browser_close_session` at the end of a task to clean up tabs created for that session.
+- Use `browser_evaluate` only when the popup toggle is explicitly enabled.
+
+## Benchmarking
+
+For latency, measure individual HTTP calls with timestamps. For token pressure, use response byte size and an approximate `bytes / 4` estimate. This is not exact model token accounting; it measures tool-response context pressure.

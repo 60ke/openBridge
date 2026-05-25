@@ -52,9 +52,6 @@ importers:
         specifier: workspace:*
         version: link:../shared
     devDependencies:
-      '@types/chrome':
-        specifier: ^0.0.294
-        version: 0.0.294
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -527,9 +524,6 @@ packages:
 
   '@types/chrome@0.0.280':
     resolution: {integrity: sha512-AotSmZrL9bcZDDmSI1D9dE7PGbhOur5L0cKxXd7IqbVizQWCY4gcvupPUVsQ4FfDj3V2tt/iOpomT9EY0s+w1g==}
-
-  '@types/chrome@0.0.294':
-    resolution: {integrity: sha512-Jlea6UseJ0g/RZKVv33hsBcf95e5sbwfkhlNKmx8+7w/azGe2vGtpNiscMR5RESEj5HHEqOHW46F3nTJsMP7GA==}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -2823,11 +2817,6 @@ snapshots:
     optional: true
 
   '@types/chrome@0.0.280':
-    dependencies:
-      '@types/filesystem': 0.0.36
-      '@types/har-format': 1.2.16
-
-  '@types/chrome@0.0.294':
     dependencies:
       '@types/filesystem': 0.0.36
       '@types/har-format': 1.2.16
