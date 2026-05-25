@@ -35,7 +35,13 @@ jobs:
         run: pnpm build
 
       - name: Package Extension
-        run: pnpm --filter @openbridge-org/extension zip
+        working-directory: packages/extension
+        run: pnpm zip
+
+      - name: Debug - List Files
+        run: |
+          echo "Listing packages/extension/.output:"
+          ls -R packages/extension/.output || echo "Directory not found"
 
       - name: Upload Extension Artifact
         uses: actions/upload-artifact@v4
