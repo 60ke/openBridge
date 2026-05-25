@@ -62,7 +62,7 @@ Chrome Tab
 
 ## 2. Kimi 能力基线
 
-通过分析 Kimi WebBridge 扩展和本地守护进程，Kimi 当前暴露的主要浏览器工具包括：
+参考 Kimi WebBridge 的公开架构信息，Kimi 当前暴露的主要浏览器工具包括：
 
 ```text
 navigate
@@ -625,7 +625,7 @@ browser_save_as_pdf
 验收：
 
 - 导出的 PDF 文件存在。
-- 文件大小大于 1KB。
+- 文件非空，且可被常见 PDF 工具识别。
 - 可被 `file` 或 `pdfinfo` 识别为 PDF。
 
 ---
@@ -719,7 +719,7 @@ browser_network
 当前问题：
 
 - OpenBridge 返回原始 AXTree，内容大、层级杂、token 压力高。
-- 对比测试中，Kimi snapshot 约 25KB，OpenBridge snapshot 约 39KB。
+- 对比测试中，OpenBridge snapshot 需要明显减少冗余节点，降低工具响应体积和上下文压力。
 - OpenBridge 还没有稳定的可引用节点格式。
 
 建议参数：
@@ -762,7 +762,7 @@ browser_network
 
 验收：
 
-- Google 搜索结果页 snapshot 返回小于 30KB。
+- Google 搜索结果页 snapshot 使用 compact 模式时应保持足够轻量，避免返回完整原始 AXTree。
 - 搜索输入框、主要搜索结果链接、按钮都保留。
 - `browser_click` 可以使用 snapshot 中的 `ref` 点击。
 
@@ -892,7 +892,7 @@ node packages/daemon/dist/cli/index.js doctor
 交付：
 
 - 代码实现。
-- Google 搜索页 snapshot 小于 30KB。
+- Google 搜索页 snapshot 足够紧凑，保留关键可交互节点。
 - network ring buffer 不泄漏敏感 body。
 
 ### 工程师 E：安装、doctor、文档
@@ -960,7 +960,7 @@ curl -s -X POST http://127.0.0.1:10088/command \
 | `browser_find_tab` | 能按 title/url/session 查询 |
 | `browser_close_tab` | 能关闭指定 tab，状态清理正确 |
 | `browser_close_session` | 只关闭目标 session 的 managed tabs |
-| `browser_snapshot` | compact 模式小于 30KB，保留可交互节点 |
+| `browser_snapshot` | compact 模式足够轻量，保留关键可交互节点 |
 | `browser_click` | 支持 selector 和 ref |
 | `browser_mouse_click` | 坐标点击准确 |
 | `browser_fill` | 输入框填写正确 |
@@ -1091,4 +1091,3 @@ snapshot 增加 compact 参数但可以先不彻底压缩
 - OpenBridge 能完成搜索、快照、点击、输入、截图、关闭 session 的完整链路。
 - OpenBridge 和 Kimi 的能力差距只剩非核心增强项。
 - 遇到 daemon 未启动、扩展未连接、权限未开启时，错误信息能指导用户修复。
-

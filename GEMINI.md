@@ -61,6 +61,10 @@ OpenBridge is a local browser bridge designed to connect AI agents (like Gemini,
     - Dangerous actions (e.g., `browser_evaluate`) may be restricted or require explicit permission.
 - **Error Handling:** Use the shared `ErrorCode` from `@openbridge/shared`.
 
+## Design Acknowledgments
+
+OpenBridge's three-layer architecture (daemon + extension + local API) follows the proven model pioneered by Kimi WebBridge (Moonshot AI). Session management patterns are inspired by CodeX (OpenAI). OpenBridge builds on these concepts as an independent open-source project.
+
 ## Key Files for Reference
 - `packages/daemon/src/index.ts`: Daemon exports.
 - `packages/daemon/src/cli/index.ts`: Command-line interface.

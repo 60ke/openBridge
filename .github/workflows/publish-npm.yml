@@ -1,0 +1,66 @@
+name: Publish NPM
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "packages/shared/**"
+      - "packages/daemon/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/publish-npm.yml"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Publish packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          publish_if_needed() {
+            local dir="$1"
+            local name version
+            name="$(node -p "require('./${dir}/package.json').name")"
+            version="$(node -p "require('./${dir}/package.json').version")"
+
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "${name}@${version} already exists, skipping"
+              return 0
+            fi
+
+            echo "Publishing ${name}@${version}"
+            npm publish "./${dir}" --access public
+          }
+
+          publish_if_needed packages/shared
+          publish_if_needed packages/daemon
