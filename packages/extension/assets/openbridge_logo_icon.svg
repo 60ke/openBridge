@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="leftGrad" x1="86" y1="104" x2="280" y2="408" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="rightGrad" x1="232" y1="104" x2="426" y2="408" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+    <linearGradient id="bridgeGrad" x1="168" y1="256" x2="344" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2563EB"/>
+      <stop offset="0.52" stop-color="#06B6D4"/>
+      <stop offset="1" stop-color="#34D399"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Left open link: AI side -->
+  <path d="M263 169C225 118 151 108 103 149C45 199 45 313 103 363C151 404 225 394 263 343" 
+        stroke="url(#leftGrad)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Right open link: Web side -->
+  <path d="M249 343C287 394 361 404 409 363C467 313 467 199 409 149C361 108 287 118 249 169" 
+        stroke="url(#rightGrad)" stroke-width="62" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Central connection -->
+  <path d="M169 256H343" stroke="url(#bridgeGrad)" stroke-width="44" stroke-linecap="round"/>
+  <circle cx="256" cy="256" r="27" fill="#0B1020" fill-opacity="0.92"/>
+  <circle cx="256" cy="256" r="15" fill="url(#bridgeGrad)"/>
+</svg>

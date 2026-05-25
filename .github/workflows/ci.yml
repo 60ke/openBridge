@@ -38,14 +38,14 @@ jobs:
         working-directory: packages/extension
         run: pnpm zip
 
-      - name: Debug - List Files
+      - name: List Extension Packages
         run: |
-          echo "Listing packages/extension/.output:"
-          ls -R packages/extension/.output || echo "Directory not found"
+          find packages/extension/.output -maxdepth 1 -name "*-chrome.zip" -print
 
       - name: Upload Extension Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: openbridge-extension
-          path: packages/extension/.output/*.zip
+          name: openbridge-extension-chrome
+          path: packages/extension/.output/*-chrome.zip
           if-no-files-found: error
+          retention-days: 30

@@ -1,7 +1,9 @@
 node_modules
 dist
 .wxt
+packages/extension/.output/
 *.crx
+*.zip
 .DS_Store
 .openbridge-data/
 
