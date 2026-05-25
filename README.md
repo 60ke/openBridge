@@ -119,6 +119,46 @@ Example config is in [openbridge-mcp-config.example.json](./openbridge-mcp-confi
 }
 ```
 
+## Client Usage
+
+OpenBridge can be used in two ways:
+
+- `skill + local API`: the smooth default path for Codex-style clients
+- `MCP stdio`: the standard path for clients that expect an MCP server entry
+
+### Codex
+
+Codex is the primary default flow. After `./install.sh`, OpenBridge installs the `openbridge-webbridge` skill into the local Codex skills directory. Once the daemon is running and the extension is connected, Codex can use the skill to call `http://127.0.0.1:10088/command` directly.
+
+### Claude Code
+
+Claude Code can use OpenBridge in either mode:
+
+- preferred: install the OpenBridge skill and let Claude Code call the local API
+- optional: add the MCP config shown above if you want OpenBridge to appear as a standard MCP server
+
+### OpenCode
+
+If OpenCode supports local MCP server configuration, use the `openbridge mcp` entry from the MCP example. If your OpenCode workflow supports Codex-style local skills or shell-driven helpers, you can also call the local API directly.
+
+### Kimi
+
+Kimi itself already ships its own WebBridge stack. OpenBridge is not meant to replace Kimi's built-in browser bridge inside the Kimi product. The intended comparison is architectural: OpenBridge follows a similar `daemon + extension + local API` model, but as an open project.
+
+### CodeX
+
+CodeX-style workflows map naturally to OpenBridge's skill path. Install the project with `./install.sh`, keep the daemon running, and let the client use the installed `openbridge-webbridge` skill. MCP remains available if you want to wire OpenBridge into a more standard server registry.
+
+### CloudCode / Other MCP Clients
+
+For any client that only knows how to consume MCP servers, use the MCP config and point it at:
+
+```bash
+node /absolute/path/to/openBridge/packages/daemon/dist/cli/index.js mcp --api-port 10088
+```
+
+For any client that can run local shell commands or use local skills, the local API path is usually the smoother option.
+
 ## Browser Tools
 
 OpenBridge currently supports:

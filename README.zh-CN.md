@@ -119,6 +119,46 @@ curl -s -X POST http://127.0.0.1:10088/command \
 }
 ```
 
+## 不同客户端怎么用
+
+OpenBridge 有两条接入路径：
+
+- `skill + local API`：默认、最顺滑的路径
+- `MCP stdio`：标准 MCP 路径
+
+### Codex
+
+Codex 是默认主路径。执行 `./install.sh` 后，OpenBridge 会把 `openbridge-webbridge` skill 安装到本地 Codex skills 目录。daemon 运行且扩展连上后，Codex 可以直接通过 skill 调用 `http://127.0.0.1:10088/command`。
+
+### Claude Code
+
+Claude Code 两种方式都可以：
+
+- 推荐：安装 OpenBridge skill，让 Claude Code 直接调本地 API
+- 可选：使用上面的 MCP 配置，把 OpenBridge 作为一个标准 MCP server 接进去
+
+### OpenCode
+
+如果 OpenCode 支持本地 MCP server 配置，就直接使用上面的 `openbridge mcp` 配置。如果你的 OpenCode 工作流也支持本地 skill、shell helper 或直接调本地 HTTP 服务，那也可以直接走 local API。
+
+### Kimi
+
+Kimi 自己已经带了官方 WebBridge。OpenBridge 不是拿来替换 Kimi 产品内置桥接器的，而是一个开源实现，架构上采用了类似的 `daemon + extension + local API` 路线。
+
+### CodeX
+
+CodeX 风格的使用方式和 OpenBridge 的 skill 路径很匹配。执行 `./install.sh`，保持 daemon 运行，然后让客户端使用已安装的 `openbridge-webbridge` skill。MCP 继续保留，适合想把它挂进统一 MCP 注册表的场景。
+
+### CloudCode / 其他 MCP 客户端
+
+如果某个客户端只支持 MCP server，那就使用 MCP 配置，指向：
+
+```bash
+node /absolute/path/to/openBridge/packages/daemon/dist/cli/index.js mcp --api-port 10088
+```
+
+如果某个客户端支持本地 shell 或 skill，那么通常 `local API` 这条线会更顺滑。
+
 ## 浏览器工具
 
 当前支持：
