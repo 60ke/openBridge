@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { ErrorCode } from "@openbridge/shared";
+import { ErrorCode } from "@openbridge-org/shared";
 import { getToolDefinitions } from "./tools.js";
 import type { BridgeController } from "../service/bridge-controller.js";
 import type { LocalApiClient } from "../service/local-api-client.js";

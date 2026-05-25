@@ -3,7 +3,7 @@ import { ReconnectManager } from "../src/background/reconnect";
 import { CommandRouter } from "../src/background/command-router";
 import { toolHandlers } from "../src/background/tool-registry";
 import { cdpExecutor } from "../src/background/cdp-executor";
-import type { CommandPayload, CommandResultPayload, ErrorPayload } from "@openbridge/shared";
+import type { CommandPayload, CommandResultPayload, ErrorPayload } from "@openbridge-org/shared";
 
 export const wsClient = new BridgeWsClient();
 export const reconnectManager = new ReconnectManager(wsClient);

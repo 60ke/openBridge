@@ -1,4 +1,4 @@
-import type { CommandPayload, CommandResultPayload } from "@openbridge/shared";
+import type { CommandPayload, CommandResultPayload } from "@openbridge-org/shared";
 import type { BridgeWsClient } from "./ws-client";
 
 export interface ToolHandler {

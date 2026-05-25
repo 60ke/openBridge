@@ -1,4 +1,4 @@
-import { RiskLevel, MVP_TOOLS, ErrorCode } from "@openbridge/shared";
+import { RiskLevel, MVP_TOOLS, ErrorCode } from "@openbridge-org/shared";
 
 export class PermissionManager {
   enabledTools: Set<string>;

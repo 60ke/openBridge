@@ -1,4 +1,4 @@
-import { RiskLevel, MVP_TOOLS } from "@openbridge/shared";
+import { RiskLevel, MVP_TOOLS } from "@openbridge-org/shared";
 
 export const DANGEROUS_ACTIONS: string[] = MVP_TOOLS
   .filter((t) => t.riskLevel === RiskLevel.HIGH)

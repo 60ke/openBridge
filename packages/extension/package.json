@@ -1,13 +1,19 @@
 {
-  "name": "@openbridge/extension",
+  "name": "@openbridge-org/extension",
   "version": "0.1.0",
   "description": "OpenBridge Chrome extension - bridges browser to local daemon",
   "type": "module",
+  "author": "OpenBridge contributors",
+  "homepage": "https://github.com/60ke/openBridge#readme",
+  "bugs": {
+    "url": "https://github.com/60ke/openBridge/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/60ke/openBridge.git"
+    "url": "git+https://github.com/60ke/openBridge.git"
   },
   "license": "MIT",
+  "private": true,
   "keywords": [
     "browser-bridge",
     "chrome-extension",
@@ -21,7 +27,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@openbridge/shared": "workspace:*"
+    "@openbridge-org/shared": "workspace:^"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

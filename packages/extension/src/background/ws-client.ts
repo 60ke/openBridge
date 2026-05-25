@@ -6,7 +6,7 @@ import type {
   PairChallengePayload,
   CommandPayload,
   ErrorPayload,
-} from "@openbridge/shared";
+} from "@openbridge-org/shared";
 
 type WsState = "disconnected" | "connecting" | "connected";
 

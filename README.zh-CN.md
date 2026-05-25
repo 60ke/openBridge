@@ -51,6 +51,13 @@ daemon 是长期运行的本地服务，`openbridge mcp` 是一个轻量的 stdi
 curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh | bash
 ```
 
+NPM 包：
+
+```bash
+npm install -g @openbridge-org/daemon
+openbridge start
+```
+
 如果想安装到自定义目录：
 
 ```bash

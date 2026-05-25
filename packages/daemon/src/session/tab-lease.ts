@@ -1,4 +1,4 @@
-import { ErrorCode } from "@openbridge/shared";
+import { ErrorCode } from "@openbridge-org/shared";
 import { logger } from "../diagnostics/logger.js";
 
 export interface TabLease {

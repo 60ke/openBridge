@@ -29,8 +29,8 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.0.0
         version: 1.29.0(zod@3.25.76)
-      '@openbridge/shared':
-        specifier: workspace:*
+      '@openbridge-org/shared':
+        specifier: workspace:^
         version: link:../shared
       ws:
         specifier: ^8.17.0
@@ -48,8 +48,8 @@ importers:
 
   packages/extension:
     dependencies:
-      '@openbridge/shared':
-        specifier: workspace:*
+      '@openbridge-org/shared':
+        specifier: workspace:^
         version: link:../shared
     devDependencies:
       typescript:

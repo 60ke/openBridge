@@ -1,18 +1,32 @@
 {
-  "name": "@openbridge/daemon",
+  "name": "@openbridge-org/daemon",
   "version": "0.1.0",
   "description": "Local browser bridge daemon for AI agents - MCP and HTTP API",
   "type": "module",
+  "author": "OpenBridge contributors",
+  "homepage": "https://github.com/60ke/openBridge#readme",
+  "bugs": {
+    "url": "https://github.com/60ke/openBridge/issues"
+  },
   "bin": {
-    "openbridge": "./dist/cli/index.js"
+    "openbridge": "dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/60ke/openBridge.git"
+    "url": "git+https://github.com/60ke/openBridge.git"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "keywords": [
     "browser-bridge",
     "mcp",
@@ -27,7 +41,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "@openbridge/shared": "workspace:*",
+    "@openbridge-org/shared": "workspace:^",
     "ws": "^8.17.0",
     "zod": "^3.23.0"
   },

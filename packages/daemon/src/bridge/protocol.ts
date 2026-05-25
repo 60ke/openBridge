@@ -6,7 +6,7 @@ import {
   type CommandPayload,
   type ErrorPayload,
   type ErrorCode,
-} from "@openbridge/shared";
+} from "@openbridge-org/shared";
 
 export function encodeMessage(msg: BridgeMessage, extra?: Record<string, unknown>): string {
   return JSON.stringify({ version: 1, ...(msg as unknown as Record<string, unknown>), ...extra });

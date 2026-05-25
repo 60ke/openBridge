@@ -9,7 +9,7 @@ import {
   type HelloPayload,
   type PairChallengePayload,
   ErrorCode,
-} from "@openbridge/shared";
+} from "@openbridge-org/shared";
 import { encodeMessage, decodeMessage, createHelloAck, createError } from "./protocol.js";
 import type { PairingManager } from "./pairing.js";
 import type { AuthManager } from "./auth.js";

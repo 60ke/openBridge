@@ -1,8 +1,13 @@
 {
-  "name": "@openbridge/shared",
+  "name": "@openbridge-org/shared",
   "version": "0.1.0",
   "description": "Shared types and utilities for OpenBridge monorepo",
   "type": "module",
+  "author": "OpenBridge contributors",
+  "homepage": "https://github.com/60ke/openBridge#readme",
+  "bugs": {
+    "url": "https://github.com/60ke/openBridge/issues"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -13,9 +18,18 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/60ke/openBridge.git"
+    "url": "git+https://github.com/60ke/openBridge.git"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
+  ],
   "keywords": [
     "browser-bridge",
     "openbridge",

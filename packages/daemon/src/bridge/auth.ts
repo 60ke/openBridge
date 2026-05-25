@@ -1,4 +1,4 @@
-import { ErrorCode } from "@openbridge/shared";
+import { ErrorCode } from "@openbridge-org/shared";
 import type { PairingManager } from "./pairing.js";
 
 export class AuthManager {

@@ -52,6 +52,13 @@ Quick network install:
 curl -fsSL https://raw.githubusercontent.com/60ke/openBridge/master/install.sh | bash
 ```
 
+NPM package:
+
+```bash
+npm install -g @openbridge-org/daemon
+openbridge start
+```
+
 Install into a custom directory:
 
 ```bash

@@ -1,5 +1,5 @@
-import type { CommandResultPayload } from "@openbridge/shared";
-import { ErrorCode } from "@openbridge/shared";
+import type { CommandResultPayload } from "@openbridge-org/shared";
+import { ErrorCode } from "@openbridge-org/shared";
 import type { BridgeWebSocketServer } from "../bridge/websocket-server.js";
 import type { PermissionManager } from "../policy/permissions.js";
 import type { RequestQueue } from "../session/request-queue.js";

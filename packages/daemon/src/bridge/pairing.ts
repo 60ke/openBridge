@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { ErrorCode } from "@openbridge/shared";
+import { ErrorCode } from "@openbridge-org/shared";
 
 interface PairingData {
   secret: string;

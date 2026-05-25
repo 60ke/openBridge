@@ -6,7 +6,7 @@ import { SessionManager } from "../session/session-manager.js";
 import { TabLeaseManager } from "../session/tab-lease.js";
 import { RequestQueue } from "../session/request-queue.js";
 import { logger } from "../diagnostics/logger.js";
-import type { EventPayload } from "@openbridge/shared";
+import type { EventPayload } from "@openbridge-org/shared";
 import { BridgeController } from "../service/bridge-controller.js";
 import { LocalApiServer } from "../service/local-api-server.js";
 import { DATA_DIR, DEFAULT_API_PORT, DEFAULT_WS_PORT, LOG_FILE, ROOT_DIR } from "../runtime/paths.js";
