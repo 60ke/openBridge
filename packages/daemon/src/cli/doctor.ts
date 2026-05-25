@@ -194,7 +194,7 @@ function checkPairingStatus(): DoctorResult {
     label: "Pairing status",
     ok: isPaired,
     detail: isPaired ? "Paired" : "Not paired",
-    fix: isPaired ? undefined : "Run: openbridge pair",
+    fix: isPaired ? undefined : "Load or reload the Chrome extension; it should authorize automatically",
   };
 }
 
@@ -255,10 +255,10 @@ async function checkExtensionConnected(apiPort: number): Promise<DoctorResult> {
     return {
       label: "Extension connected",
       ok: connected,
-      detail: connected ? `Connected (${sessions!.length} session${sessions!.length !== 1 ? "s" : ""})` : "Not connected",
-      fix: connected
-        ? undefined
-        : "Open Chrome, enable the OpenBridge extension, and click Pair",
+    detail: connected ? `Connected (${sessions!.length} session${sessions!.length !== 1 ? "s" : ""})` : "Not connected",
+    fix: connected
+      ? undefined
+      : "Open Chrome and load or reload the OpenBridge extension; authorization is automatic",
     };
   } catch {
     return {
@@ -338,10 +338,10 @@ function checkMcpConfig(): DoctorResult {
   }
 
   return {
-    label: "MCP client config",
-    ok: false,
-    detail: "No MCP config with 'openbridge' found",
-    fix: "Add openbridge to your MCP client config (see openbridge-mcp-config.example.json)",
+    label: "Optional MCP client config",
+    ok: true,
+    detail: "Not configured (skill + local API is the default path)",
+    fix: "Add openbridge to your MCP client config only if you want MCP integration",
   };
 }
 
@@ -374,4 +374,3 @@ function checkDaemonWs(port: number): Promise<boolean> {
     });
   });
 }
-

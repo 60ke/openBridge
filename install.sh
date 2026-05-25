@@ -9,6 +9,7 @@ WS_PORT="${OPENBRIDGE_WS_PORT:-10087}"
 API_PORT="${OPENBRIDGE_API_PORT:-10088}"
 INSTALL_SKILL=1
 START_DAEMON=1
+TMUX_SESSION="${OPENBRIDGE_TMUX_SESSION:-openbridge-daemon}"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -20,6 +21,19 @@ info()  { echo -e "${CYAN}==>${NC} $*"; }
 ok()    { echo -e "${GREEN}  ✓${NC} $*"; }
 warn()  { echo -e "${YELLOW}  ⚠${NC} $*"; }
 fail()  { echo -e "${RED}  ✗${NC} $*"; }
+
+wait_for_local_api() {
+  local port="$1"
+  local attempts="${2:-20}"
+  local i
+  for ((i = 1; i <= attempts; i++)); do
+    if curl -fsS "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 0.5
+  done
+  return 1
+}
 
 usage() {
   cat <<EOF
@@ -33,6 +47,7 @@ Options:
 Environment:
   OPENBRIDGE_WS_PORT   WebSocket port, default 10087
   OPENBRIDGE_API_PORT  Local API port, default 10088
+  OPENBRIDGE_TMUX_SESSION  tmux session name, default openbridge-daemon
 EOF
 }
 
@@ -138,6 +153,11 @@ if [[ "$INSTALL_SKILL" -eq 1 ]]; then
 fi
 
 if [[ "$START_DAEMON" -eq 1 ]]; then
+  if command -v tmux &>/dev/null && tmux has-session -t "$TMUX_SESSION" 2>/dev/null; then
+    info "Stopping existing tmux daemon session ($TMUX_SESSION)..."
+    tmux kill-session -t "$TMUX_SESSION" || true
+  fi
+
   if [[ -f "$PID_FILE" ]]; then
     OLD_PID="$(cat "$PID_FILE" || true)"
     if [[ -n "${OLD_PID}" ]] && kill -0 "$OLD_PID" 2>/dev/null; then
@@ -149,16 +169,26 @@ if [[ "$START_DAEMON" -eq 1 ]]; then
   fi
 
   info "Starting OpenBridge daemon on WS port $WS_PORT, API port $API_PORT..."
-  OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
-    --port "$WS_PORT" \
-    --api-port "$API_PORT" \
-    >"$LOG_FILE" 2>&1 &
-  DAEMON_PID=$!
-  echo "$DAEMON_PID" > "$PID_FILE"
+  if command -v tmux &>/dev/null; then
+    tmux new-session -d -s "$TMUX_SESSION" \
+      "cd '$ROOT_DIR' && OPENBRIDGE_NO_MCP=1 node '$ROOT_DIR/packages/daemon/dist/cli/index.js' serve --port '$WS_PORT' --api-port '$API_PORT' >>'$LOG_FILE' 2>&1"
+    sleep 0.5
+    DAEMON_PID="$(tmux list-panes -t "$TMUX_SESSION" -F '#{pane_pid}' 2>/dev/null | head -n 1 || true)"
+    echo "$DAEMON_PID" > "$PID_FILE"
+  else
+    OPENBRIDGE_NO_MCP=1 nohup node "$ROOT_DIR/packages/daemon/dist/cli/index.js" serve \
+      --port "$WS_PORT" \
+      --api-port "$API_PORT" \
+      </dev/null >"$LOG_FILE" 2>&1 &
+    DAEMON_PID=$!
+    echo "$DAEMON_PID" > "$PID_FILE"
+  fi
 
-  sleep 2
+  if ! wait_for_local_api "$API_PORT" 20; then
+    sleep 1
+  fi
 
-  if ! kill -0 "$DAEMON_PID" 2>/dev/null; then
+  if ! curl -fsS "http://127.0.0.1:$API_PORT/health" >/dev/null 2>&1; then
     fail "Daemon failed to start. Check log: $LOG_FILE"
     cat "$LOG_FILE"
     exit 1
@@ -166,9 +196,7 @@ if [[ "$START_DAEMON" -eq 1 ]]; then
   ok "Daemon started (PID $DAEMON_PID)"
 
   info "Running health check..."
-  sleep 1
-  HEALTH=$(curl -s "http://127.0.0.1:$API_PORT/health" 2>/dev/null || echo "")
-  if [[ -n "$HEALTH" ]]; then
+  if wait_for_local_api "$API_PORT" 10; then
     ok "Local API is responding"
   else
     warn "Local API not responding yet (may need a moment)"
