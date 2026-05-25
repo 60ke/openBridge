@@ -33,3 +33,13 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Package Extension
+        run: pnpm --filter @openbridge-org/extension zip
+
+      - name: Upload Extension Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openbridge-extension
+          path: packages/extension/.output/*.zip
+          if-no-files-found: error
