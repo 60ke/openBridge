@@ -1,0 +1,74 @@
+name: Release Extension
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  release-extension:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Package Chrome Extension
+        working-directory: packages/extension
+        run: pnpm zip
+
+      - name: Prepare Release Asset
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./packages/extension/package.json').version")"
+          mkdir -p artifacts
+          cp packages/extension/.output/*-chrome.zip "artifacts/openbridge-extension-chrome-v${version}.zip"
+          unzip -t "artifacts/openbridge-extension-chrome-v${version}.zip"
+          echo "EXTENSION_VERSION=${version}" >> "$GITHUB_ENV"
+          echo "ASSET_PATH=artifacts/openbridge-extension-chrome-v${version}.zip" >> "$GITHUB_ENV"
+
+      - name: Resolve Release Tag
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          else
+            tag="v${EXTENSION_VERSION}"
+          fi
+          echo "RELEASE_TAG=${tag}" >> "$GITHUB_ENV"
+
+      - name: Create Or Update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${ASSET_PATH}" --clobber
+          else
+            gh release create "${RELEASE_TAG}" "${ASSET_PATH}" \
+              --title "OpenBridge ${RELEASE_TAG}" \
+              --notes "Chrome extension package for OpenBridge ${RELEASE_TAG}."
+          fi
