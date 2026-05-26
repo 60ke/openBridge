@@ -5,6 +5,12 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (skip publish & release)"
+        required: false
+        default: "false"
+        type: string
 
 jobs:
   release:
