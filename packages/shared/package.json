@@ -1,6 +1,6 @@
 {
   "name": "@openbridge-org/shared",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Shared types and utilities for OpenBridge monorepo",
   "type": "module",
   "author": "OpenBridge contributors",
