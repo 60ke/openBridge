@@ -107,21 +107,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          notes="OpenBridge ${RELEASE_TAG}
+          cat > /tmp/release-notes.md << 'NOTES_EOF'
+          OpenBridge $RELEASE_TAG
 
-Assets:
-- Chrome Web Store package: openbridge-extension-chrome-v${RELEASE_VERSION}.zip
-- NPM package tarballs for @openbridge-org/shared and @openbridge-org/daemon
+          Assets:
+          - Chrome Web Store package: openbridge-extension-chrome-v$RELEASE_VERSION.zip
+          - NPM package tarballs for shared and daemon packages
 
-Published NPM packages:
-- @openbridge-org/shared@${RELEASE_VERSION}
-- @openbridge-org/daemon@${RELEASE_VERSION}"
+          Published NPM packages:
+          - shared@$RELEASE_VERSION
+          - daemon@$RELEASE_VERSION
+          NOTES_EOF
+          sed -i "s/\$RELEASE_TAG/${RELEASE_TAG}/g; s/\$RELEASE_VERSION/${RELEASE_VERSION}/g" /tmp/release-notes.md
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" artifacts/* --clobber
-            gh release edit "${RELEASE_TAG}" --title "OpenBridge ${RELEASE_TAG}" --notes "${notes}"
+            gh release edit "${RELEASE_TAG}" --title "OpenBridge ${RELEASE_TAG}" --notes-file /tmp/release-notes.md
           else
             gh release create "${RELEASE_TAG}" artifacts/* \
               --title "OpenBridge ${RELEASE_TAG}" \
-              --notes "${notes}"
+              --notes-file /tmp/release-notes.md
           fi
