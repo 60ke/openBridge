@@ -5,6 +5,8 @@ const evaluateToggle = document.getElementById("evaluateToggle") as HTMLInputEle
 const pauseToggle = document.getElementById("pauseToggle") as HTMLInputElement;
 const cursorToggle = document.getElementById("cursorToggle") as HTMLInputElement;
 const activityList = document.getElementById("activityList")!;
+const managedTabsList = document.getElementById("managedTabsList")!;
+const closeAllTabsBtn = document.getElementById("closeAllTabsBtn")!;
 const footer = document.getElementById("footer")!;
 
 const manifest = chrome.runtime.getManifest();
@@ -115,6 +117,40 @@ async function loadRecentActivity(): Promise<void> {
     .join("");
 }
 
+interface ManagedTab {
+  tabId: number;
+  url?: string;
+  title?: string;
+  label?: string;
+}
+
+async function loadManagedTabs(): Promise<void> {
+  const response = await send({ type: "getManagedTabs" });
+  const tabs = (response.tabs ?? []) as ManagedTab[];
+
+  if (tabs.length === 0) {
+    managedTabsList.innerHTML = `<div class="activity-empty">No tabs managed</div>`;
+    closeAllTabsBtn.style.display = "none";
+    return;
+  }
+
+  closeAllTabsBtn.style.display = "inline-block";
+  managedTabsList.innerHTML = tabs
+    .map(
+      (tab) =>
+        `<div class="activity-item"><span class="name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;color:#e0e0e0">${escapeHtml(tab.title ?? tab.url ?? `Tab #${tab.tabId}`)}</span><span class="time">${tab.label ?? `#${tab.tabId}`}</span></div>`
+    )
+    .join("");
+}
+
+closeAllTabsBtn.addEventListener("click", async () => {
+  const response = await send({ type: "closeAllManagedTabs" });
+  const count = (response.closed as number) ?? 0;
+  if (count > 0) {
+    await loadManagedTabs();
+  }
+});
+
 function formatTime(timestamp: number): string {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
@@ -130,9 +166,11 @@ async function init(): Promise<void> {
   await loadToggles();
   await updateStatus();
   await loadRecentActivity();
+  await loadManagedTabs();
 }
 
 init();
 
 setInterval(updateStatus, 2000);
 setInterval(loadRecentActivity, 5000);
+setInterval(loadManagedTabs, 5000);

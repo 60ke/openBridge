@@ -1,16 +1,98 @@
+const MANAGED_TABS_KEY = "managedTabs";
+const LABELS_KEY = "tabLabels";
+const COUNTER_KEY = "labelCounter";
+
 export class CdpExecutor {
   activeTabId: number | null = null;
+  private attachedTabs = new Set<number>();
+  private tabLabels = new Map<number, string>();
+  private labelCounter = 0;
 
-  async attach(tabId: number): Promise<void> {
+  async restoreState(): Promise<void> {
+    const data = await chrome.storage.session.get([MANAGED_TABS_KEY, LABELS_KEY, COUNTER_KEY]);
+    const managedTabIds: number[] = data[MANAGED_TABS_KEY] ?? [];
+    const savedLabels: Record<string, string> = data[LABELS_KEY] ?? {};
+    this.labelCounter = (data[COUNTER_KEY] as number) ?? 0;
+
+    for (const tabId of managedTabIds) {
+      const label = savedLabels[String(tabId)];
+      if (!label) continue;
+
+      try {
+        await chrome.debugger.attach({ tabId }, "1.3");
+      } catch {
+        await this.persistRemove(tabId);
+        continue;
+      }
+
+      this.attachedTabs.add(tabId);
+      this.tabLabels.set(tabId, label);
+    }
+  }
+
+  private async persistAdd(tabId: number, label: string): Promise<void> {
+    const data = await chrome.storage.session.get([MANAGED_TABS_KEY, LABELS_KEY]);
+    const ids: number[] = data[MANAGED_TABS_KEY] ?? [];
+    const labels: Record<string, string> = data[LABELS_KEY] ?? {};
+    if (!ids.includes(tabId)) ids.push(tabId);
+    labels[String(tabId)] = label;
+    await chrome.storage.session.set({
+      [MANAGED_TABS_KEY]: ids,
+      [LABELS_KEY]: labels,
+      [COUNTER_KEY]: this.labelCounter,
+    });
+  }
+
+  private async persistRemove(tabId: number): Promise<void> {
+    const data = await chrome.storage.session.get([MANAGED_TABS_KEY, LABELS_KEY]);
+    const ids: number[] = data[MANAGED_TABS_KEY] ?? [];
+    const labels: Record<string, string> = data[LABELS_KEY] ?? {};
+    delete labels[String(tabId)];
+    await chrome.storage.session.set({
+      [MANAGED_TABS_KEY]: ids.filter((id) => id !== tabId),
+      [LABELS_KEY]: labels,
+      [COUNTER_KEY]: this.labelCounter,
+    });
+  }
+
+  private async persistClear(): Promise<void> {
+    await chrome.storage.session.set({
+      [MANAGED_TABS_KEY]: [],
+      [LABELS_KEY]: {},
+      [COUNTER_KEY]: this.labelCounter,
+    });
+  }
+
+  async attach(tabId: number, setTitle = true): Promise<void> {
+    if (this.isAttached(tabId)) {
+      this.activeTabId = tabId;
+      return;
+    }
     try {
       await chrome.debugger.attach({ tabId }, "1.3");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
-      if (!msg.includes("Already attached")) {
-        throw e;
+      if (msg.toLowerCase().includes("already attached")) {
+        this.attachedTabs.add(tabId);
+        this.activeTabId = tabId;
+        if (!this.tabLabels.has(tabId)) {
+          this.labelCounter++;
+          this.tabLabels.set(tabId, `🤖-${String(this.labelCounter).padStart(3, "0")}`);
+          this.persistAdd(tabId, this.tabLabels.get(tabId)!);
+        }
+        if (setTitle) this.setTabLabelTitle(tabId);
+        return;
       }
+      throw e;
     }
     this.activeTabId = tabId;
+    this.attachedTabs.add(tabId);
+    if (!this.tabLabels.has(tabId)) {
+      this.labelCounter++;
+      this.tabLabels.set(tabId, `🤖-${String(this.labelCounter).padStart(3, "0")}`);
+      this.persistAdd(tabId, this.tabLabels.get(tabId)!);
+    }
+    if (setTitle) this.setTabLabelTitle(tabId);
   }
 
   async detach(tabId?: number): Promise<void> {
@@ -20,6 +102,7 @@ export class CdpExecutor {
     if (this.activeTabId === targetId) {
       this.activeTabId = null;
     }
+    this.attachedTabs.delete(targetId);
   }
 
   async sendCommand(method: string, params?: object): Promise<any> {
@@ -37,6 +120,49 @@ export class CdpExecutor {
     const targetId = tabId ?? this.activeTabId;
     if (targetId == null) return false;
     return this.activeTabId === targetId;
+  }
+
+  isAttached(tabId: number): boolean {
+    return this.attachedTabs.has(tabId);
+  }
+
+  getAllAttachedTabIds(): number[] {
+    return Array.from(this.attachedTabs);
+  }
+
+  getTabLabel(tabId: number): string | undefined {
+    return this.tabLabels.get(tabId);
+  }
+
+  getAllTabLabels(): Map<number, string> {
+    return new Map(this.tabLabels);
+  }
+
+  async setTabLabelTitle(tabId: number): Promise<void> {
+    const label = this.tabLabels.get(tabId);
+    if (!label) return;
+    try {
+      await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+        expression: `document.title = ${JSON.stringify(`${label}-`)} + document.title.replace(/^\\u{1F916}-\\d{3}-/, '')`
+      });
+    } catch {
+    }
+  }
+
+  async removeTab(tabId: number): Promise<void> {
+    this.attachedTabs.delete(tabId);
+    this.tabLabels.delete(tabId);
+    await this.persistRemove(tabId);
+    if (this.activeTabId === tabId) {
+      this.activeTabId = null;
+    }
+  }
+
+  async clearAll(): Promise<void> {
+    this.attachedTabs.clear();
+    this.tabLabels.clear();
+    await this.persistClear();
+    this.activeTabId = null;
   }
 }
 

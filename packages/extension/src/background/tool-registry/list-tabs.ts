@@ -1,5 +1,6 @@
 import type { ToolHandler } from "../command-router";
 import { tabGroupManager } from "../session/tab-group-manager";
+import { cdpExecutor } from "../cdp-executor";
 
 export class ListTabsHandler implements ToolHandler {
   name = "browser_list_tabs";
@@ -8,6 +9,7 @@ export class ListTabsHandler implements ToolHandler {
     _args: Record<string, any>
   ): Promise<{ data?: any; error?: { code: string; message: string } }> {
     const tabs = await chrome.tabs.query({});
+    const allLabels = cdpExecutor.getAllTabLabels();
 
     const enrichedTabs = await Promise.all(
       tabs.map(async (tab) => {
@@ -17,6 +19,11 @@ export class ListTabsHandler implements ToolHandler {
           title: tab.title,
           active: tab.active,
         };
+
+        const label = tab.id != null ? allLabels.get(tab.id) : undefined;
+        if (label) {
+          entry.label = label;
+        }
 
         if (tab.groupId != null && tab.groupId !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
           try {

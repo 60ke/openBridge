@@ -51,6 +51,7 @@ export class NavigateHandler implements ToolHandler {
           };
         }
       }
+      await cdpExecutor.setTabLabelTitle(tabId);
     } else {
       if (cdpExecutor.activeTabId == null) {
         return {
@@ -76,6 +77,7 @@ export class NavigateHandler implements ToolHandler {
           };
         }
       }
+      await cdpExecutor.setTabLabelTitle(tabId);
     }
 
     const groupInfo = sessionId ? await tabGroupManager.getGroupInfo(sessionId) : undefined;

@@ -30,4 +30,5 @@ export const MVP_TOOLS: ToolPermission[] = [
   { toolName: "browser_upload", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
   { toolName: "browser_save_as_pdf", riskLevel: RiskLevel.LOW, defaultEnabled: true },
   { toolName: "browser_network", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
+  { toolName: "browser_close_all_managed_tabs", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
 ];

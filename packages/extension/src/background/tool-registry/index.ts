@@ -18,6 +18,7 @@ import { KeyTypeHandler } from "./key-type";
 import { UploadHandler } from "./upload";
 import { SaveAsPdfHandler } from "./save-as-pdf";
 import { NetworkHandler } from "./network";
+import { CloseAllTabsHandler } from "./close-all-tabs";
 
 export const toolHandlers: ToolHandler[] = [
   new ListTabsHandler(),
@@ -39,4 +40,5 @@ export const toolHandlers: ToolHandler[] = [
   new UploadHandler(),
   new SaveAsPdfHandler(),
   new NetworkHandler(),
+  new CloseAllTabsHandler(),
 ];

@@ -58,7 +58,7 @@ curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
 
 | Tool | Args | Notes |
 |------|------|-------|
-| `browser_list_tabs` | `{}` | List tabs with group information |
+| `browser_list_tabs` | `{}` | List tabs with group information. Each tab includes a `label` field (e.g. `🤖-001`) to identify extension-controlled tabs |
 | `browser_new_tab` | `{url?,sessionId?,groupTitle?,groupColor?}` | Open a new tab, optionally in a colored session group |
 | `browser_select_tab` | `{tabId,sessionId?,groupTitle?,groupColor?}` | Select and attach to an existing tab |
 | `browser_navigate` | `{url,newTab?,sessionId?,groupTitle?,waitUntil?,timeoutMs?}` | Navigate current or new tab |
@@ -76,6 +76,7 @@ curl -s -X POST "http://127.0.0.1:${API_PORT}/command" \
 | `browser_find_tab` | `{query?,urlContains?,titleContains?,sessionId?,activate?}` | Find or activate tabs |
 | `browser_upload` | `{selector,paths}` | Set files on an input |
 | `browser_save_as_pdf` | `{printBackground?}` | Return PDF as base64 |
+| `browser_close_all_managed_tabs` | `{}` | Close every tab that the extension has opened or controlled. Use this at the end of a task to ensure no leftover tabs remain |
 | `browser_network` | `{action,limit?}` | `start`, `stop`, `get`, or `clear` network events |
 
 ## Workflow

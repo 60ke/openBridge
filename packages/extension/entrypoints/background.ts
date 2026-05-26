@@ -31,6 +31,8 @@ async function sendToActiveTab(message: Record<string, unknown>): Promise<void> 
 export default defineBackground(() => {
   console.log("OpenBridge background service worker loaded");
 
+  cdpExecutor.restoreState();
+
   const router = new CommandRouter(wsClient);
   for (const handler of toolHandlers) {
     router.registerTool(handler);
@@ -93,7 +95,8 @@ export default defineBackground(() => {
     }
   });
 
-  chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.tabs.onRemoved.addListener(async (tabId) => {
+    await cdpExecutor.removeTab(tabId);
     if (wsClient.state !== "connected") return;
     wsClient.send({
       type: "event",
@@ -105,8 +108,10 @@ export default defineBackground(() => {
     });
   });
 
-  chrome.debugger.onDetach.addListener((source, reason) => {
-    if (wsClient.state !== "connected" || source.tabId == null) return;
+  chrome.debugger.onDetach.addListener(async (source, reason) => {
+    if (source.tabId == null) return;
+    await cdpExecutor.removeTab(source.tabId);
+    if (wsClient.state !== "connected") return;
     wsClient.send({
       type: "event",
       payload: {
@@ -211,6 +216,41 @@ export default defineBackground(() => {
           chrome.storage.local.set({ paused: !!msg.paused });
           sendResponse({ success: true });
           break;
+        }
+        case "getManagedTabs": {
+          const tabIds = cdpExecutor.getAllAttachedTabIds();
+          Promise.all(
+            tabIds.map(async (tabId) => {
+              try {
+                const tab = await chrome.tabs.get(tabId);
+                return { tabId: tab.id, url: tab.url, title: tab.title, label: cdpExecutor.getTabLabel(tabId) };
+              } catch {
+                await cdpExecutor.removeTab(tabId);
+                return null;
+              }
+            })
+          ).then((tabs) => {
+            sendResponse({ tabs: tabs.filter((t): t is NonNullable<typeof t> => t !== null) });
+          });
+          return true;
+        }
+        case "closeAllManagedTabs": {
+          const tabIds = cdpExecutor.getAllAttachedTabIds();
+          (async () => {
+            for (const tabId of tabIds) {
+              if (cdpExecutor.isAttached(tabId)) {
+                try {
+                  await cdpExecutor.detach(tabId);
+                } catch {}
+              }
+            }
+            try {
+              await chrome.tabs.remove(tabIds);
+            } catch {}
+            await cdpExecutor.clearAll();
+            sendResponse({ closed: tabIds.length });
+          })();
+          return true;
         }
         default:
           sendResponse({ error: "Unknown message type" });

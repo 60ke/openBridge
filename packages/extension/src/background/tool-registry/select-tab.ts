@@ -15,6 +15,7 @@ export class SelectTabHandler implements ToolHandler {
 
     await chrome.tabs.update(tabId, { active: true });
     await cdpExecutor.attach(tabId);
+    await cdpExecutor.setTabLabelTitle(tabId);
 
     if (sessionId) {
       try {
