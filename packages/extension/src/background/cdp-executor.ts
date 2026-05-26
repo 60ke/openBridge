@@ -80,19 +80,19 @@ export class CdpExecutor {
           this.tabLabels.set(tabId, `🤖-${String(this.labelCounter).padStart(3, "0")}`);
           this.persistAdd(tabId, this.tabLabels.get(tabId)!);
         }
-        if (setTitle) this.setTabLabelTitle(tabId);
-        return;
-      }
-      throw e;
+        if (setTitle) await this.setTabLabelTitle(tabId);
+      return;
     }
-    this.activeTabId = tabId;
-    this.attachedTabs.add(tabId);
-    if (!this.tabLabels.has(tabId)) {
-      this.labelCounter++;
-      this.tabLabels.set(tabId, `🤖-${String(this.labelCounter).padStart(3, "0")}`);
-      this.persistAdd(tabId, this.tabLabels.get(tabId)!);
-    }
-    if (setTitle) this.setTabLabelTitle(tabId);
+    throw e;
+  }
+  this.activeTabId = tabId;
+  this.attachedTabs.add(tabId);
+  if (!this.tabLabels.has(tabId)) {
+    this.labelCounter++;
+    this.tabLabels.set(tabId, `🤖-${String(this.labelCounter).padStart(3, "0")}`);
+    this.persistAdd(tabId, this.tabLabels.get(tabId)!);
+  }
+  if (setTitle) await this.setTabLabelTitle(tabId);
   }
 
   async detach(tabId?: number): Promise<void> {
@@ -138,13 +138,38 @@ export class CdpExecutor {
     return new Map(this.tabLabels);
   }
 
+  private titleInjectedTabs = new Set<number>();
+
+  clearTitleInjected(tabId: number): void {
+    this.titleInjectedTabs.delete(tabId);
+  }
+
   async setTabLabelTitle(tabId: number): Promise<void> {
     const label = this.tabLabels.get(tabId);
     if (!label) return;
     try {
-      await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
-        expression: `document.title = ${JSON.stringify(`${label}-`)} + document.title.replace(/^\\u{1F916}-\\d{3}-/, '')`
-      });
+      if (!this.titleInjectedTabs.has(tabId)) {
+        await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+          expression: [
+            `(function() {`,
+            `  const p = ${JSON.stringify(`${label}-`)};`,
+            `  const re = /^\\u{1F916}-\\d{3}-/;`,
+            `  const orig = Object.getOwnPropertyDescriptor(Document.prototype, 'title');`,
+            `  Object.defineProperty(document, 'title', {`,
+            `    get() { return orig.get.call(this); },`,
+            `    set(v) { orig.set.call(this, re.test(v) ? v : p + v.replace(re, '')); },`,
+            `    configurable: true`,
+            `  });`,
+            `  document.title = document.title;`,
+            `})();`
+          ].join('\n')
+        });
+        this.titleInjectedTabs.add(tabId);
+      } else {
+        await chrome.debugger.sendCommand({ tabId }, "Runtime.evaluate", {
+          expression: `document.title = document.title`
+        });
+      }
     } catch {
     }
   }
@@ -152,6 +177,7 @@ export class CdpExecutor {
   async removeTab(tabId: number): Promise<void> {
     this.attachedTabs.delete(tabId);
     this.tabLabels.delete(tabId);
+    this.titleInjectedTabs.delete(tabId);
     await this.persistRemove(tabId);
     if (this.activeTabId === tabId) {
       this.activeTabId = null;
@@ -161,6 +187,7 @@ export class CdpExecutor {
   async clearAll(): Promise<void> {
     this.attachedTabs.clear();
     this.tabLabels.clear();
+    this.titleInjectedTabs.clear();
     await this.persistClear();
     this.activeTabId = null;
   }

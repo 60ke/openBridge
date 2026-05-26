@@ -41,6 +41,7 @@ export class NavigateHandler implements ToolHandler {
         ? this.waitForNextLoad(tabId, waitUntil, timeoutMs)
         : undefined;
 
+      cdpExecutor.clearTitleInjected(tabId);
       await cdpExecutor.sendCommand("Page.navigate", { url });
 
       if (waitForLoad) {
@@ -67,6 +68,7 @@ export class NavigateHandler implements ToolHandler {
         ? this.waitForNextLoad(tabId, waitUntil, timeoutMs)
         : undefined;
 
+      cdpExecutor.clearTitleInjected(tabId);
       await cdpExecutor.sendCommand("Page.navigate", { url });
 
       if (waitForLoad) {

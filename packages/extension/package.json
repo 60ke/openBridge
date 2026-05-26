@@ -1,6 +1,6 @@
 {
   "name": "@openbridge-org/extension",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "OpenBridge Chrome extension - bridges browser to local daemon",
   "type": "module",
   "author": "OpenBridge contributors",
