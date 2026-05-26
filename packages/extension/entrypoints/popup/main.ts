@@ -7,6 +7,7 @@ const cursorToggle = document.getElementById("cursorToggle") as HTMLInputElement
 const activityList = document.getElementById("activityList")!;
 const managedTabsList = document.getElementById("managedTabsList")!;
 const closeAllTabsBtn = document.getElementById("closeAllTabsBtn")!;
+const viewAllBtn = document.getElementById("viewAllBtn")!;
 const footer = document.getElementById("footer")!;
 
 const manifest = chrome.runtime.getManifest();
@@ -27,12 +28,14 @@ async function updateStatus(): Promise<void> {
     const autoPairing = response.autoPairing === true;
     const url = response.url as string | undefined;
 
+    const wsUrl = url ?? "ws://127.0.0.1:10087";
+
     if (transportConnected) {
       statusDot.classList.add("connected");
       if (paired) {
-        connectionStatus.innerHTML = `<span class="url">Connected to ${url ?? "ws://127.0.0.1:10087"}</span>`;
+        connectionStatus.innerHTML = `<span class="conn-label">Connected to local daemon</span><code class="conn-url">${wsUrl}</code>`;
       } else {
-        connectionStatus.innerHTML = `<span class="url">Bridge reachable at ${url ?? "ws://127.0.0.1:10087"}</span>`;
+        connectionStatus.innerHTML = `<span class="conn-label">Bridge reachable</span><code class="conn-url">${wsUrl}</code>`;
       }
     } else {
       statusDot.classList.remove("connected");
@@ -40,7 +43,7 @@ async function updateStatus(): Promise<void> {
     }
 
     if (paired) {
-      pairingInfo.innerHTML = `<span class="paired-text">Authorized ✓</span><button class="btn btn-danger" id="resetPairBtn">Reset</button>`;
+      pairingInfo.innerHTML = `<span class="paired-text">Authorized</span><button class="btn btn-danger" id="resetPairBtn">Reset</button>`;
       document.getElementById("resetPairBtn")!.addEventListener("click", handleResetPairing);
     } else if (transportConnected) {
       const label = autoPairing
@@ -99,23 +102,34 @@ async function loadToggles(): Promise<void> {
   cursorToggle.checked = !!result.cursor_enabled;
 }
 
+let showAllActivity = false;
+
 async function loadRecentActivity(): Promise<void> {
   const result = await chrome.storage.local.get(["recent_operations"]);
   const operations: Array<{ name: string; timestamp: number }> = result.recent_operations ?? [];
-  const recent = operations.slice(-5).reverse();
+  const displayed = showAllActivity ? operations.slice().reverse() : operations.slice(-5).reverse();
 
-  if (recent.length === 0) {
+  if (displayed.length === 0) {
     activityList.innerHTML = `<div class="activity-empty">No recent activity</div>`;
+    viewAllBtn.style.display = "none";
     return;
   }
 
-  activityList.innerHTML = recent
+  viewAllBtn.style.display = "inline";
+  viewAllBtn.textContent = showAllActivity ? "Show less" : "View all";
+
+  activityList.innerHTML = displayed
     .map(
       (op) =>
         `<div class="activity-item"><span class="name">${escapeHtml(op.name)}</span><span class="time">${formatTime(op.timestamp)}</span></div>`
     )
     .join("");
 }
+
+viewAllBtn.addEventListener("click", () => {
+  showAllActivity = !showAllActivity;
+  loadRecentActivity();
+});
 
 interface ManagedTab {
   tabId: number;
@@ -138,7 +152,7 @@ async function loadManagedTabs(): Promise<void> {
   managedTabsList.innerHTML = tabs
     .map(
       (tab) =>
-        `<div class="activity-item"><span class="name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;color:#e0e0e0">${escapeHtml(tab.title ?? tab.url ?? `Tab #${tab.tabId}`)}</span><span class="time">${tab.label ?? `#${tab.tabId}`}</span></div>`
+        `<div class="activity-item"><span class="name">${escapeHtml(tab.title ?? tab.url ?? `Tab #${tab.tabId}`)}</span><span class="time">${tab.label ?? `#${tab.tabId}`}</span></div>`
     )
     .join("");
 }
