@@ -79,7 +79,14 @@ jobs:
             fi
 
             echo "Publishing ${name}@${version}"
-            npm publish "./${dir}" --access public
+            npm publish "./${dir}" --access public || {
+              local rc=$?
+              if npm view "${name}@${version}" version >/dev/null 2>&1; then
+                echo "${name}@${version} already exists on registry, continuing"
+                return 0
+              fi
+              return $rc
+            }
           }
 
           publish_if_needed packages/shared
