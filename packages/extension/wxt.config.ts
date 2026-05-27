@@ -5,7 +5,7 @@ export default defineConfig({
     name: "OpenBridge",
     description: "Browser automation bridge for AI agents",
     version: "0.1.0",
-    permissions: ["tabs", "activeTab", "debugger", "storage", "alarms", "scripting", "tabGroups", "windows", "downloads"],
+    permissions: ["tabs", "activeTab", "debugger", "storage", "alarms", "tabGroups", "windows"],
     host_permissions: ["<all_urls>"],
     icons: {
       16: "/icons/icon-16.png",
