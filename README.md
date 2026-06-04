@@ -46,6 +46,10 @@ The daemon is long-running, while `openbridge mcp` is a lightweight stdio shim t
 > review it before running. You can also follow the manual steps to clone and
 > inspect the code.
 
+Chrome extension:
+
+- [Install OpenBridge from the Chrome Web Store](https://chromewebstore.google.com/detail/openbridge/mdoemfmcfdgoehpcnjiecocecjcmmblh)
+
 Quick network install:
 
 ```bash
@@ -92,6 +96,8 @@ packages/extension/.output/chrome-mv3
 ```
 
 Open `chrome://extensions`, enable Developer Mode, choose **Load unpacked**, and select the directory above.
+
+If you prefer the published extension, install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/openbridge/mdoemfmcfdgoehpcnjiecocecjcmmblh) instead of loading the unpacked build.
 
 After the daemon and extension are both running, the extension authorizes automatically. The popup should show `Authorized`. Codex can then use the installed skill to call `http://127.0.0.1:10088/command` directly, without requiring OpenBridge to appear in an MCP server list.
 
@@ -232,6 +238,21 @@ browser_network
 - `browser_evaluate` is disabled by default and must be explicitly enabled.
 - Pairing tokens are local machine state and should not be committed.
 - `.openbridge-data/` is ignored by Git.
+
+## Roadmap / TODO
+
+- Web capability packaging and multimodal expansion:
+  - Treat each web page as a capability unit.
+  - Use CDP and page inspection to detect forms, upload controls, prompt inputs, generation buttons, media viewers, and other interaction surfaces.
+  - Package detected page workflows into structured tools such as `send_message()`, `generate_image()`, `upload_file()`, or `summarize_video()`.
+  - Let agents call web products such as Gemini, OpenAI, and similar browser-based services as local-style functions when the user is already logged in, without requiring separate API keys.
+  - Add validation fixtures for common page patterns: chat input, file upload, image generation, video understanding, result download, and permission prompts.
+- Fine-grained tab role tagging:
+  - Current status: session-based tab groups and color labels are already implemented.
+  - Add a separate tag layer for agent-side role addressing, independent of Chrome tab groups.
+  - Support examples such as `list_tabs(tag="login-page")`, `find_tab(tags=["search-result"])`, and `close_tabs(tags=["temp"])`.
+  - Keep the model as: tab groups manage task lifecycle and visibility; tags manage semantic roles and precise tab lookup.
+  - Persist tag metadata across extension service worker restarts and expose it consistently through local API, MCP, and skill documentation.
 
 ## Design Acknowledgments
 

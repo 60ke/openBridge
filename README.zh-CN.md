@@ -45,6 +45,10 @@ daemon 是长期运行的本地服务，`openbridge mcp` 是一个轻量的 stdi
 > **安全提示：** 下方的快速安装脚本很方便，但建议先审查脚本内容再执行。
 > 你也可以使用手动安装步骤，先 clone 仓库审查代码。
 
+Chrome 扩展：
+
+- [从 Chrome Web Store 安装 OpenBridge](https://chromewebstore.google.com/detail/openbridge/mdoemfmcfdgoehpcnjiecocecjcmmblh)
+
 推荐直接走网络安装：
 
 ```bash
@@ -91,6 +95,8 @@ packages/extension/.output/chrome-mv3
 ```
 
 打开 `chrome://extensions`，开启开发者模式，选择 **Load unpacked**，然后选择上面的目录。
+
+如果想使用已发布版本，也可以直接从 [Chrome Web Store](https://chromewebstore.google.com/detail/openbridge/mdoemfmcfdgoehpcnjiecocecjcmmblh) 安装，不需要加载本地 unpacked build。
 
 daemon 和扩展都启动后，扩展会自动授权连接。Popup 里应该显示 `Authorized`。之后 Codex 可以通过已安装的 skill 直接调用 `http://127.0.0.1:10088/command`，不要求 OpenBridge 一定出现在 MCP 服务列表里。
 
@@ -231,6 +237,21 @@ browser_network
 - `browser_evaluate` 默认关闭，需要用户显式开启。
 - 配对 token 是本机运行态，不应该提交到仓库。
 - `.openbridge-data/` 已加入 Git 忽略。
+
+## Roadmap / TODO
+
+- 网页能力封装与多模态扩展：
+  - 把每个网页视为一个“能力单元”。
+  - 通过 CDP 和页面探测识别表单、上传控件、Prompt 输入框、生成按钮、媒体查看器等交互接口。
+  - 把页面工作流封装成结构化工具，例如 `send_message()`、`generate_image()`、`upload_file()`、`summarize_video()`。
+  - 当用户已经在浏览器登录 Gemini、OpenAI 等网页版产品时，让 Agent 像调用本地函数一样调用这些网页能力，不额外要求 API Key。
+  - 增加常见页面模式的验证用例：聊天输入、文件上传、图像生成、视频理解、结果下载、权限弹窗。
+- 精细化标签管理：
+  - 当前状态：基于 session 的 Chrome 标签组和颜色区分已经实现了一部分。
+  - 新增独立的 tag 层，用于 Agent 按语义角色寻址标签页，和 Chrome 标签组解耦。
+  - 支持类似 `list_tabs(tag="login-page")`、`find_tab(tags=["search-result"])`、`close_tabs(tags=["temp"])` 的精确过滤和批量清理。
+  - 保持两层模型：标签组负责任务生命周期和用户可见边界；tag 负责角色寻址和精确查找。
+  - tag 元数据需要能跨 extension service worker 重启保留，并在 local API、MCP、skill 文档中保持一致。
 
 ## 设计致谢
 
