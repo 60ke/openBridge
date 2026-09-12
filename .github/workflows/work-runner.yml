@@ -1,0 +1,33 @@
+name: Work Runner tests
+on:
+  pull_request:
+    paths:
+      - 'packages/work-runner/**'
+      - 'packages/extension/src/background/work/**'
+      - '.github/workflows/work-runner.yml'
+  push:
+    branches: ['feat/chatgpt-work-runner']
+    paths:
+      - 'packages/work-runner/**'
+      - 'packages/extension/src/background/work/**'
+      - '.github/workflows/work-runner.yml'
+permissions:
+  contents: read
+jobs:
+  python:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -r packages/work-runner/requirements.txt
+      - name: State, image, HTTP and recovery tests (no ChatGPT login)
+        working-directory: packages/work-runner
+        run: python -m unittest discover -s tests -v

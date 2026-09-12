@@ -1,0 +1,9 @@
+{
+  "job_id": "image-poc-001",
+  "prompt": "Generate one image using the instructions already configured in this conversation. Provide the original downloadable image.",
+  "input_paths": [],
+  "expected_images": 1,
+  "min_width": 512,
+  "min_height": 512,
+  "input_version": "poc-v1"
+}

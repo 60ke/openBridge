@@ -1,0 +1,10 @@
+config.local.json
+*.local.json
+.venv/
+__pycache__/
+*.pyc
+*.sqlite*
+.work-runner-data/
+inputs/
+downloads/
+test-results/

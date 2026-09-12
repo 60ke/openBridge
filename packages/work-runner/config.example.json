@@ -1,0 +1,21 @@
+{
+  "conversation_url": "https://chatgpt.com/c/REPLACE-WITH-YOUR-CONVERSATION-ID",
+  "data_dir": "~/.openbridge-work",
+  "download_root": "~/Downloads",
+  "input_root": "~/OpenBridgeInputs",
+  "bridge_url": "http://127.0.0.1:10088",
+  "bridge_connection_id": null,
+  "tab_id": null,
+  "poll_seconds": 10,
+  "stable_seconds": 15,
+  "timeout_seconds": 5400,
+  "mode_pattern": "Work|工作",
+  "selectors": {},
+  "backend_url": null,
+  "backend_token_env": "WORK_BACKEND_TOKEN",
+  "visual_url": null,
+  "visual_token_env": "WORK_VISUAL_TOKEN",
+  "api_token_env": "WORK_RUNNER_TOKEN",
+  "runner_id": "local-runner",
+  "claim_remote": false
+}
