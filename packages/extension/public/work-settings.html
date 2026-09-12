@@ -1,0 +1,9 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>OpenBridge Work Runner</title>
+<style>body{font:16px system-ui;max-width:780px;margin:40px auto;padding:20px;line-height:1.6}input[type=url]{width:100%;padding:10px;box-sizing:border-box}label{display:block;margin:20px 0}button{padding:10px 24px}code{background:#eee;padding:3px}#result{white-space:pre-wrap}</style>
+<h1>固定会话 · Work Runner</h1><p>仅允许本地 Runner 操作下方会话。登录、验证码、付款和未知权限确认仍需人工处理。本扩展不会替你开启 Chrome，也不会把工作区内容自动发往公网。</p>
+<label>会话 URL <input type="url" id="url" placeholder="https://chatgpt.com/c/…"></label>
+<label><input type="checkbox" id="enabled"> 我授权本地 Runner 在这个会话提交任务并读取本次结果</label>
+<label><input type="checkbox" id="downloads"> 允许下载这个会话中本次生成的原图</label>
+<button id="save">保存授权</button><p id="result" role="status"></p>
+<p>业务 API、令牌、输入目录和视觉检查器在本地 <code>config.local.json</code> 配置；本页面不保存这些凭据。源码是 POC，必须先在你的实际页面校准选择器。通过扩展管理页的“扩展程序选项”再次打开。</p>
+<script src="work-settings.js"></script></html>

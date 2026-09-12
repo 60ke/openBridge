@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { WORK_TOOL_SCHEMAS } from "./work-schemas.js";
 
 export const ListTabsShape = {};
 
@@ -111,4 +112,5 @@ export const TOOL_SCHEMAS: ToolSchemaEntry[] = [
   { name: "browser_save_as_pdf", description: "Export the current page as PDF", shape: SaveAsPdfShape },
   { name: "browser_close_all_managed_tabs", description: "Close all browser tabs that were opened or controlled by the extension. Use this to clean up leftover tabs when a task is done, regardless of session", shape: CloseAllManagedTabsShape },
   { name: "browser_network", description: "Observe network requests (start/get/clear)", shape: NetworkShape },
+  ...WORK_TOOL_SCHEMAS,
 ];

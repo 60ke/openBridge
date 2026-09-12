@@ -19,6 +19,7 @@ import { UploadHandler } from "./upload";
 import { SaveAsPdfHandler } from "./save-as-pdf";
 import { NetworkHandler } from "./network";
 import { CloseAllTabsHandler } from "./close-all-tabs";
+import { workToolHandlers } from "../work/tools";
 
 export const toolHandlers: ToolHandler[] = [
   new ListTabsHandler(),
@@ -41,4 +42,5 @@ export const toolHandlers: ToolHandler[] = [
   new SaveAsPdfHandler(),
   new NetworkHandler(),
   new CloseAllTabsHandler(),
+  ...workToolHandlers,
 ];

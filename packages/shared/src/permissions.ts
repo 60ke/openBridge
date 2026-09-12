@@ -31,4 +31,11 @@ export const MVP_TOOLS: ToolPermission[] = [
   { toolName: "browser_save_as_pdf", riskLevel: RiskLevel.LOW, defaultEnabled: true },
   { toolName: "browser_network", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
   { toolName: "browser_close_all_managed_tabs", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
+  // All Work handlers additionally require an explicit per-conversation options-page opt-in.
+  { toolName: "chatgpt_work_observe", riskLevel: RiskLevel.LOW, defaultEnabled: true },
+  { toolName: "chatgpt_work_prepare", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
+  { toolName: "chatgpt_work_submit", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
+  { toolName: "chatgpt_work_capture", riskLevel: RiskLevel.LOW, defaultEnabled: true },
+  { toolName: "browser_download_begin", riskLevel: RiskLevel.MEDIUM, defaultEnabled: true },
+  { toolName: "browser_download_status", riskLevel: RiskLevel.LOW, defaultEnabled: true },
 ];
