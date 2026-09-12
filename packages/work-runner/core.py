@@ -159,8 +159,18 @@ class Store:
         body = {"job_id": r["job"]["job_id"], "attempt_id": r["attempt_id"], "status": status, **extra}
         event_id = digest(body)
         body["event_id"] = event_id
+        # A durable success event and callback_pending must be one transaction.
+        # Otherwise a crash between the two could deliver success and strand the job.
+        committed = {**r, "phase": "callback_pending"} if status == "succeeded" else r
         with self.lock, self.db:
             self.db.execute("INSERT OR IGNORE INTO outbox(id,job_id,body) VALUES(?,?,?)", (event_id, body["job_id"], json.dumps(body)))
+            if status == "succeeded":
+                cursor = self.db.execute("UPDATE jobs SET phase=?,data=? WHERE id=?",
+                    (committed["phase"], json.dumps(committed), body["job_id"]))
+                if cursor.rowcount != 1:
+                    raise ValueError("SUCCESS_JOB_NOT_FOUND")
+        if status == "succeeded":
+            r.update(committed)
         return event_id
 
     def pending(self) -> list:
@@ -255,17 +265,20 @@ class Bridge:
 def decode_image(data: bytes, minimum: tuple[int, int] = (1, 1)) -> dict:
     if not 0 < len(data) <= MAX_BYTES:
         raise ValueError("INVALID_IMAGE_SIZE")
-    with warnings.catch_warnings():
-        warnings.simplefilter("error", Image.DecompressionBombWarning)
-        with Image.open(io.BytesIO(data)) as image:
-            fmt, (width, height) = image.format, image.size
-            if fmt not in {"PNG", "JPEG", "WEBP"} or width * height > 40_000_000:
-                raise ValueError("UNSUPPORTED_IMAGE")
-            if width < minimum[0] or height < minimum[1] or getattr(image, "n_frames", 1) != 1:
-                raise ValueError("IMAGE_DIMENSIONS_OR_FRAMES")
-            image.verify()
-        with Image.open(io.BytesIO(data)) as image:
-            image.load()
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(io.BytesIO(data)) as image:
+                fmt, (width, height) = image.format, image.size
+                if fmt not in {"PNG", "JPEG", "WEBP"} or width * height > 40_000_000:
+                    raise ValueError("UNSUPPORTED_IMAGE")
+                if width < minimum[0] or height < minimum[1] or getattr(image, "n_frames", 1) != 1:
+                    raise ValueError("IMAGE_DIMENSIONS_OR_FRAMES")
+                image.verify()
+            with Image.open(io.BytesIO(data)) as image:
+                image.load()
+    except (Image.DecompressionBombWarning, Image.DecompressionBombError) as error:
+        raise ValueError("IMAGE_DECODE_LIMIT") from error
     return {"sha256": digest(data), "bytes": len(data), "width": width, "height": height,
             "extension": {"PNG": "png", "JPEG": "jpg", "WEBP": "webp"}[fmt], "mime": Image.MIME[fmt]}
 
